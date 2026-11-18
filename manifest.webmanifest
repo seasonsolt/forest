@@ -1,0 +1,19 @@
+{
+  "name": "天天和警长的森林探案",
+  "short_name": "森林探案",
+  "description": "和天天、拉布拉多警长一起在森林点触寻宝，边听边拼学自然拼读与英文动作词。",
+  "lang": "zh-CN",
+  "id": "forest.html",
+  "start_url": "forest.html",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "landscape",
+  "background_color": "#1a2e22",
+  "theme_color": "#1a2e22",
+  "icons": [
+    { "src": "game/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "game/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "game/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

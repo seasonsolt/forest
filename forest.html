@@ -1,0 +1,3036 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<title>天天和警长的森林探案</title>
+<meta name="theme-color" content="#1a2e22">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="game/icon-192.png">
+<link rel="apple-touch-icon" href="game/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="森林探案">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+  @font-face { font-family: 'ZCOOL KuaiLe'; src: url("game/font_zh.woff2?v=aec63c32b67e") format('woff2'); font-display: swap; }
+  @font-face { font-family: 'Fredoka'; src: url("game/font_en.woff2?v=aec63c32b67e") format('woff2'); font-weight: 500 700; font-display: swap; }
+  :root { --night: #112219; --forest: #1c3526; --gold: #ffd27a; --cream: #fff7e6; }
+  * { box-sizing: border-box; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; height: 100%; background: var(--night); color: var(--cream); overflow: hidden;
+    font-family: "ZCOOL KuaiLe", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  }
+  svg#stage {
+    width: min(98vw, 180vh); max-height: 98vh; height: auto; display: block; border-radius: 18px;
+    box-shadow: 0 22px 64px rgba(0, 0, 0, .65); background: var(--forest); touch-action: manipulation;
+  }
+  svg#stage text { font-family: "ZCOOL KuaiLe", "PingFang SC", sans-serif; }
+  svg#stage .latin { font-family: "Fredoka", "Nunito", "Arial Rounded MT Bold", sans-serif; font-weight: 700; }
+
+  @keyframes moteDrift { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(12px, -14px) scale(1.18); } }
+  .mote { animation: moteDrift 10s ease-in-out infinite; }
+  @keyframes flicker { 0%, 100% { opacity: .6; } 50% { opacity: .95; } }
+  .flicker { animation: flicker 4s ease-in-out infinite; }
+  @keyframes bobSlow { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+  .bobSlow { animation: bobSlow 3s ease-in-out infinite; }
+  @keyframes rippleRing { 0% { transform: scale(.85); opacity: .78; } 100% { transform: scale(1.9); opacity: 0; } }
+  .ux-ripple { animation: rippleRing 1.3s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+  @keyframes petalFall {
+    0% { transform: translateY(-30px) rotate(0deg); opacity: 0; }
+    12% { opacity: .92; }
+    85% { opacity: .88; }
+    100% { transform: translateY(550px) rotate(320deg); opacity: 0; }
+  }
+  .fin-petal { animation: petalFall 5.6s linear infinite; }
+
+  .ux-btn { cursor: pointer; }
+  .ux-btn .btn-vis { transition: transform .16s ease, filter .16s ease; }
+  .ux-btn:hover .btn-vis, .ux-btn:focus-visible .btn-vis { transform: scale(1.06); filter: drop-shadow(0 0 12px rgba(255, 224, 150, .85)); }
+  .ux-btn:active .btn-vis { transform: scale(.94); }
+  .ux-btn:focus-visible { outline: none; }
+  .ux-btn.is-hold .btn-vis { filter: drop-shadow(0 0 14px rgba(154, 240, 178, .9)); }
+  .ux-btn[data-state="lock"] { cursor: default; }
+  .ux-btn[data-state="lock"]:hover .btn-vis { transform: none; filter: none; }
+
+  .hotspot { cursor: pointer; transition: transform .18s ease; }
+  .hotspot:hover { filter: drop-shadow(0 0 10px rgba(255, 236, 155, .9)); }
+  .stone-btn { cursor: pointer; }
+  .stone-btn:hover .stone-vis, .stone-btn:focus-visible .stone-vis { transform: scale(1.07); filter: drop-shadow(0 0 14px rgba(255, 218, 122, .95)); }
+  .stone-btn:active .stone-vis { transform: scale(.93); }
+  .stone-btn:focus-visible { outline: none; }
+
+  @keyframes uxShake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-7px); } 75% { transform: translateX(7px); } }
+  .ux-shake { animation: uxShake .32s ease-out; }
+  @keyframes uxPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.09); } }
+  .ux-pulse > .btn-vis, .ux-pulse > .stone-vis, .ux-anim-pulse { animation: uxPulse 1.3s ease-in-out infinite; }
+  @keyframes uxPop { 0% { opacity: 0; transform: scale(.45); } 65% { transform: scale(1.08); } 100% { opacity: 1; transform: scale(1); } }
+  .ux-pop { opacity: 0; transform: scale(.45); }
+  .ux-pop.on { opacity: 1; transform: scale(1); animation: uxPop .42s cubic-bezier(.2, .9, .3, 1.3) both; }
+  @keyframes pageIn { from { opacity: 0; } to { opacity: 1; } }
+  .page { animation: pageIn .35s ease; }
+
+  #padFocus rect { fill: none; stroke: #ffd27a; stroke-width: 5; opacity: .95; }
+  #modal { pointer-events: auto; }
+  #modal input, #modal select { font: inherit; }
+
+  #turn {
+    display: none; position: fixed; inset: 0; z-index: 20; background: var(--night);
+    align-items: center; justify-content: center;
+  }
+  #turn svg { width: min(55vw, 55vh); height: auto; }
+  @keyframes turnHint { 0%, 25% { transform: rotate(0deg); } 65%, 100% { transform: rotate(-90deg); } }
+  #turn .tablet { transform-origin: 120px 120px; animation: turnHint 2.6s ease-in-out infinite; }
+  @media (orientation: portrait) {
+    #turn { display: flex; }
+    svg#stage { visibility: hidden; }
+  }
+</style>
+</head>
+<body>
+<svg id="stage" viewBox="0 0 960 520" role="img" aria-label="天天和警长的森林探案游戏画面">
+  <defs>
+    <radialGradient id="warm"><stop offset="0" stop-color="#ffd98e" stop-opacity=".75"/><stop offset=".5" stop-color="#ffb85f" stop-opacity=".28"/><stop offset="1" stop-color="#ffb85f" stop-opacity="0"/></radialGradient>
+    <radialGradient id="sun"><stop offset="0" stop-color="#fff8d6" stop-opacity=".65"/><stop offset=".6" stop-color="#ffe08a" stop-opacity=".22"/><stop offset="1" stop-color="#ffe08a" stop-opacity="0"/></radialGradient>
+    <radialGradient id="cool"><stop offset="0" stop-color="#9fe8ff" stop-opacity=".65"/><stop offset="1" stop-color="#9fe8ff" stop-opacity="0"/></radialGradient>
+    <radialGradient id="rose"><stop offset="0" stop-color="#ff9ec4" stop-opacity=".62"/><stop offset="1" stop-color="#ff9ec4" stop-opacity="0"/></radialGradient>
+    <radialGradient id="vignette" cx=".5" cy=".48" r=".74"><stop offset=".62" stop-color="#112219" stop-opacity="0"/><stop offset="1" stop-color="#112219" stop-opacity=".46"/></radialGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#0a160f" flood-opacity=".42"/></filter>
+    <filter id="silhouette" x="-5%" y="-5%" width="110%" height="110%"><feColorMatrix type="matrix" values="0 0 0 0 .35  0 0 0 0 .45  0 0 0 0 .38  0 0 0 .92 0"/></filter>
+    <linearGradient id="plateGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity=".96"/><stop offset="1" stop-color="#e4f3d8" stop-opacity=".92"/></linearGradient>
+    <linearGradient id="goldGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffefba"/><stop offset="1" stop-color="#ffbe52"/></linearGradient>
+    <linearGradient id="storyTop" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#112219" stop-opacity=".82"/><stop offset=".65" stop-color="#112219" stop-opacity=".45"/><stop offset="1" stop-color="#112219" stop-opacity="0"/></linearGradient>
+    <linearGradient id="bottomFade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#112219" stop-opacity="0"/><stop offset="1" stop-color="#112219" stop-opacity=".76"/></linearGradient>
+  </defs>
+  <image id="bg" x="-10" y="-4" width="980" height="528" preserveAspectRatio="xMidYMid slice"/>
+  <g id="glows"></g>
+  <g id="motesBack" aria-hidden="true"></g>
+  <g id="ambient" aria-hidden="true"></g>
+  <g id="hotspots"></g>
+  <g id="workshop"></g>
+  <g id="shadows"></g>
+  <g id="actors"></g>
+  <g id="fx"></g>
+  <g id="motesFront" aria-hidden="true"></g>
+  <rect id="veil" width="960" height="520" fill="#112219" opacity="0" pointer-events="none"/>
+  <rect width="960" height="520" fill="url(#vignette)" pointer-events="none"/>
+  <g id="talk" aria-live="polite"></g>
+  <g id="hud"></g>
+  <g id="overlay"></g>
+  <g id="modal"></g>
+  <g id="padFocus" pointer-events="none" visibility="hidden"><rect rx="18"/></g>
+  <g id="subs" pointer-events="none"></g>
+</svg>
+
+<div id="turn" role="img" aria-label="请把平板横过来">
+  <svg viewBox="0 0 240 240" aria-hidden="true">
+    <rect x="30" y="30" width="180" height="180" rx="40" fill="#1c3526" opacity=".75"/>
+    <g class="tablet">
+      <rect x="82" y="46" width="76" height="148" rx="12" fill="#fff7e6" stroke="#ffd27a" stroke-width="6"/>
+      <rect x="90" y="58" width="60" height="112" rx="5" fill="#2c593e"/>
+      <circle cx="120" cy="182" r="5" fill="#a8c9a0"/>
+    </g>
+    <path d="M178 60a74 74 0 0 1 20 54" fill="none" stroke="#ffd27a" stroke-width="9" stroke-linecap="round"/>
+    <path d="M186 106l12 12 12-14z" fill="#ffd27a" stroke="#ffd27a" stroke-width="5" stroke-linejoin="round"/>
+  </svg>
+</div>
+
+<script id="logic">
+/* 8-chapter forest phonics levels: Scene A (6 point-and-click hotspots) + Scene B (3 phonics sound-stone rounds).
+   Plain global script in <script id="logic">; no DOM access.
+   All hotspots are spaced inside safe stage bounds (x 120..840, y 155..440) with r=44 (> 64 CSS px at 1024x768) and pairwise gap >= 135. */
+const LEVELS = [
+  {
+    id: 'tree',
+    bg: 'bg_woods',
+    ambient: 'leaves',
+    mode: 'onset',
+    memoryId: 'm1',
+    words: ['cat', 'bat', 'nap'],
+    glows: [[180, 190, 95, 'warm'], [520, 150, 120, 'sun'], [810, 260, 85, 'warm']],
+    sceneA: [
+      { id: 't1', prop: 'prop_stump', x: 255, y: 385, r: 46, kind: 'word', word: 'cat' },
+      { id: 't2', prop: 'prop_bush', x: 435, y: 350, r: 46, kind: 'word', word: 'bat' },
+      { id: 't3', prop: 'prop_nest', x: 585, y: 205, r: 44, kind: 'word', word: 'nap' },
+      { id: 't4', prop: 'prop_rock', x: 755, y: 300, r: 44, kind: 'memory' },
+      { id: 't5', prop: 'prop_mushroom', x: 255, y: 225, r: 44, kind: 'acorn' },
+      { id: 't6', prop: 'prop_bush', x: 645, y: 405, r: 44, kind: 'acorn' },
+    ],
+    rounds: [
+      { word: 'cat', onset: 'c', rime: 'at', onsets: ['c', 'b', 'n'], rimes: ['at', 'ap', 'og'] },
+      { word: 'bat', onset: 'b', rime: 'at', onsets: ['c', 'b', 'n'], rimes: ['at', 'ap', 'og'] },
+      { word: 'nap', onset: 'n', rime: 'ap', onsets: ['c', 'b', 'n'], rimes: ['ap', 'at', 'op'] },
+    ],
+  },
+  {
+    id: 'pond',
+    bg: 'bg_pond',
+    ambient: 'ripples',
+    mode: 'onset',
+    memoryId: 'm2',
+    words: ['frog', 'log', 'hop'],
+    glows: [[260, 175, 110, 'sun'], [510, 315, 115, 'cool'], [785, 200, 90, 'warm']],
+    sceneA: [
+      { id: 'p1', prop: 'prop_lily', x: 215, y: 365, r: 46, kind: 'word', word: 'frog' },
+      { id: 'p2', prop: 'prop_stump', x: 520, y: 385, r: 46, kind: 'word', word: 'log' },
+      { id: 'p3', prop: 'prop_lily', x: 745, y: 350, r: 46, kind: 'word', word: 'hop' },
+      { id: 'p4', prop: 'prop_rock', x: 355, y: 250, r: 44, kind: 'memory' },
+      { id: 'p5', prop: 'prop_bush', x: 145, y: 215, r: 44, kind: 'acorn' },
+      { id: 'p6', prop: 'prop_mushroom', x: 625, y: 235, r: 44, kind: 'acorn' },
+    ],
+    rounds: [
+      { word: 'frog', onset: 'fr', rime: 'og', onsets: ['fr', 'l', 'h'], rimes: ['og', 'op', 'at'] },
+      { word: 'log', onset: 'l', rime: 'og', onsets: ['fr', 'l', 'h'], rimes: ['og', 'op', 'ap'] },
+      { word: 'hop', onset: 'h', rime: 'op', onsets: ['fr', 'l', 'h'], rimes: ['op', 'og', 'up'] },
+    ],
+  },
+  {
+    id: 'meadow',
+    bg: 'bg_meadow',
+    ambient: 'butterflies',
+    mode: 'onset',
+    memoryId: 'm3',
+    words: ['pup', 'bug', 'run'],
+    glows: [[210, 165, 115, 'sun'], [495, 220, 120, 'warm'], [820, 290, 90, 'sun']],
+    sceneA: [
+      { id: 'm1', prop: 'prop_bush', x: 245, y: 385, r: 46, kind: 'word', word: 'pup' },
+      { id: 'm2', prop: 'prop_mushroom', x: 425, y: 355, r: 46, kind: 'word', word: 'bug' },
+      { id: 'm3', prop: 'prop_rock', x: 755, y: 380, r: 46, kind: 'word', word: 'run' },
+      { id: 'm4', prop: 'prop_nest', x: 565, y: 215, r: 44, kind: 'memory' },
+      { id: 'm5', prop: 'prop_stump', x: 295, y: 235, r: 44, kind: 'acorn' },
+      { id: 'm6', prop: 'prop_bush', x: 805, y: 225, r: 44, kind: 'acorn' },
+    ],
+    rounds: [
+      { word: 'pup', onset: 'p', rime: 'up', onsets: ['p', 'b', 'r'], rimes: ['up', 'ug', 'un'] },
+      { word: 'bug', onset: 'b', rime: 'ug', onsets: ['p', 'b', 'r'], rimes: ['ug', 'up', 'un'] },
+      { word: 'run', onset: 'r', rime: 'un', onsets: ['p', 'b', 'r'], rimes: ['un', 'ug', 'up'] },
+    ],
+  },
+  {
+    id: 'hill',
+    bg: 'bg_meadow',
+    ambient: 'leaves',
+    mode: 'onset',
+    memoryId: 'm4',
+    words: ['pig', 'twig', 'dig'],
+    glows: [[175, 215, 95, 'warm'], [480, 170, 120, 'sun'], [770, 240, 100, 'warm']],
+    sceneA: [
+      { id: 'h1', prop: 'prop_rock', x: 245, y: 375, r: 46, kind: 'word', word: 'pig' },
+      { id: 'h2', prop: 'prop_stump', x: 485, y: 395, r: 46, kind: 'word', word: 'twig' },
+      { id: 'h3', prop: 'prop_mushroom', x: 765, y: 365, r: 46, kind: 'word', word: 'dig' },
+      { id: 'h4', prop: 'prop_bush', x: 635, y: 235, r: 44, kind: 'memory' },
+      { id: 'h5', prop: 'prop_nest', x: 345, y: 225, r: 44, kind: 'acorn' },
+      { id: 'h6', prop: 'prop_rock', x: 155, y: 205, r: 44, kind: 'acorn' },
+    ],
+    rounds: [
+      { word: 'pig', onset: 'p', rime: 'ig', onsets: ['p', 'tw', 'd'], rimes: ['ig', 'og', 'ug'] },
+      { word: 'twig', onset: 'tw', rime: 'ig', onsets: ['p', 'tw', 'd'], rimes: ['ig', 'og', 'ug'] },
+      { word: 'dig', onset: 'd', rime: 'ig', onsets: ['p', 'tw', 'd'], rimes: ['ig', 'un', 'op'] },
+    ],
+  },
+  {
+    id: 'hollow',
+    bg: 'bg_woods',
+    ambient: 'fireflies',
+    mode: 'blend',
+    memoryId: 'm5',
+    words: ['fox', 'box', 'sit'],
+    glows: [[245, 230, 110, 'warm'], [530, 250, 115, 'warm'], [790, 210, 95, 'sun']],
+    sceneA: [
+      { id: 'o1', prop: 'prop_stump', x: 245, y: 375, r: 46, kind: 'word', word: 'fox' },
+      { id: 'o2', prop: 'prop_bush', x: 475, y: 375, r: 46, kind: 'word', word: 'box' },
+      { id: 'o3', prop: 'prop_mushroom', x: 775, y: 385, r: 46, kind: 'word', word: 'sit' },
+      { id: 'o4', prop: 'prop_nest', x: 635, y: 220, r: 44, kind: 'memory' },
+      { id: 'o5', prop: 'prop_rock', x: 325, y: 235, r: 44, kind: 'acorn' },
+      { id: 'o6', prop: 'prop_stump', x: 815, y: 220, r: 44, kind: 'acorn' },
+    ],
+    rounds: [
+      { word: 'fox', onset: 'f', rime: 'ox', onsets: ['f', 'b', 's'], rimes: ['ox', 'it', 'at'] },
+      { word: 'box', onset: 'b', rime: 'ox', onsets: ['f', 'b', 's'], rimes: ['ox', 'it', 'og'] },
+      { word: 'sit', onset: 's', rime: 'it', onsets: ['f', 'b', 's'], rimes: ['it', 'ox', 'at'] },
+    ],
+  },
+  {
+    id: 'nest',
+    bg: 'bg_canopy',
+    ambient: 'fireflies',
+    mode: 'blend',
+    memoryId: 'm6',
+    words: ['hen', 'net', 'fly'],
+    glows: [[190, 200, 110, 'warm'], [490, 175, 115, 'warm'], [795, 240, 105, 'cool']],
+    sceneA: [
+      { id: 'n1', prop: 'prop_nest', x: 195, y: 265, r: 46, kind: 'word', word: 'hen' },
+      { id: 'n2', prop: 'prop_bush', x: 485, y: 365, r: 46, kind: 'word', word: 'net' },
+      { id: 'n3', prop: 'prop_mushroom', x: 775, y: 270, r: 46, kind: 'word', word: 'fly' },
+      { id: 'n4', prop: 'prop_stump', x: 255, y: 410, r: 44, kind: 'memory' },
+      { id: 'n5', prop: 'prop_rock', x: 645, y: 405, r: 44, kind: 'acorn' },
+      { id: 'n6', prop: 'prop_nest', x: 495, y: 195, r: 44, kind: 'acorn' },
+    ],
+    rounds: [
+      { word: 'hen', onset: 'h', rime: 'en', onsets: ['h', 'n', 'fl'], rimes: ['en', 'et', 'y'] },
+      { word: 'net', onset: 'n', rime: 'et', onsets: ['h', 'n', 'fl'], rimes: ['en', 'et', 'y'] },
+      { word: 'fly', onset: 'fl', rime: 'y', onsets: ['h', 'n', 'fl'], rimes: ['en', 'et', 'y'] },
+    ],
+  },
+  {
+    id: 'creek',
+    bg: 'bg_pond',
+    ambient: 'ripples',
+    mode: 'blend',
+    memoryId: 'm7',
+    words: ['duck', 'mud', 'hug'],
+    glows: [[220, 295, 105, 'cool'], [515, 225, 115, 'sun'], [795, 310, 95, 'warm']],
+    sceneA: [
+      { id: 'c1', prop: 'prop_lily', x: 245, y: 375, r: 46, kind: 'word', word: 'duck' },
+      { id: 'c2', prop: 'prop_rock', x: 510, y: 390, r: 46, kind: 'word', word: 'mud' },
+      { id: 'c3', prop: 'prop_bush', x: 785, y: 360, r: 46, kind: 'word', word: 'hug' },
+      { id: 'c4', prop: 'prop_mushroom', x: 350, y: 230, r: 44, kind: 'memory' },
+      { id: 'c5', prop: 'prop_lily', x: 645, y: 245, r: 44, kind: 'acorn' },
+      { id: 'c6', prop: 'prop_stump', x: 155, y: 220, r: 44, kind: 'acorn' },
+    ],
+    rounds: [
+      { word: 'duck', onset: 'd', rime: 'uck', onsets: ['d', 'm', 'h'], rimes: ['uck', 'ud', 'ug'] },
+      { word: 'mud', onset: 'm', rime: 'ud', onsets: ['d', 'm', 'h'], rimes: ['uck', 'ud', 'ug'] },
+      { word: 'hug', onset: 'h', rime: 'ug', onsets: ['d', 'm', 'h'], rimes: ['uck', 'ud', 'ug'] },
+    ],
+  },
+  {
+    id: 'camp',
+    bg: 'bg_canopy',
+    ambient: 'fireflies',
+    mode: 'blend',
+    memoryId: 'm8',
+    words: ['dog', 'drum', 'hum'],
+    glows: [[185, 260, 110, 'warm'], [480, 240, 140, 'warm'], [775, 260, 110, 'warm']],
+    sceneA: [
+      { id: 'a1', prop: 'prop_stump', x: 245, y: 385, r: 46, kind: 'word', word: 'dog' },
+      { id: 'a2', prop: 'prop_rock', x: 485, y: 390, r: 46, kind: 'word', word: 'drum' },
+      { id: 'a3', prop: 'prop_nest', x: 785, y: 360, r: 46, kind: 'word', word: 'hum' },
+      { id: 'a4', prop: 'prop_bush', x: 325, y: 235, r: 44, kind: 'memory' },
+      { id: 'a5', prop: 'prop_mushroom', x: 635, y: 225, r: 44, kind: 'acorn' },
+      { id: 'a6', prop: 'prop_bush', x: 825, y: 205, r: 44, kind: 'acorn' },
+    ],
+    rounds: [
+      { word: 'dog', onset: 'd', rime: 'og', onsets: ['d', 'dr', 'h'], rimes: ['og', 'um', 'at'] },
+      { word: 'drum', onset: 'dr', rime: 'um', onsets: ['d', 'dr', 'h'], rimes: ['um', 'og', 'op'] },
+      { word: 'hum', onset: 'h', rime: 'um', onsets: ['d', 'dr', 'h'], rimes: ['um', 'og', 'ug'] },
+    ],
+  },
+];
+/* Pure game state machine for 天天和警长的森林探案 (<script id="logic">). Zero DOM access; runs in Node tests and browser. */
+const STAGE_W = 960;
+const STAGE_H = 520;
+const IDLE_HINT_SEC = 12;
+
+function createGame() {
+  const g = {
+    state: 'title',   // 'title' | 'play' | 'clear' | 'win'
+    index: 0,
+    screen: 0,        // 0 = Scene A (Clue Hunt), 1 = Scene B (Sound Workshop)
+    time: 0,
+    idleTime: 0,
+    hintTarget: null,
+    workshopReady: false,
+    memoryFound: false,
+    hotspots: [],
+    orbs: { got: 0, total: 3, words: [] },
+    acorns: { got: 0, total: 2 },
+    stars: { got: 0, total: 2 },   // alias matching shared HUD/review conventions
+    skye: { x: 165, y: 150, tx: 165, ty: 150, facing: 1, cheer: 0 },
+    labrador: { x: 120, y: 405, tx: 120, ty: 405, facing: 1, cheer: 0 },
+    workshop: null,
+    events: [],
+
+    level() {
+      return LEVELS[g.index];
+    },
+
+    emit(ev) {
+      g.events.push(ev);
+    },
+
+    drain() {
+      return g.events.splice(0, g.events.length);
+    },
+
+    load(i) {
+      const idx = Math.max(0, Math.min(LEVELS.length - 1, i | 0));
+      const lv = LEVELS[idx];
+      g.index = idx;
+      g.screen = 0;
+      g.time = 0;
+      g.idleTime = 0;
+      g.hintTarget = null;
+      g.workshopReady = false;
+      g.memoryFound = false;
+      g.hotspots = lv.sceneA.map(h => Object.assign({}, h, { opened: false }));
+      g.orbs = { got: 0, total: lv.words.length, words: [] };
+      g.acorns = { got: 0, total: lv.sceneA.filter(h => h.kind === 'acorn').length };
+      g.stars = { got: 0, total: g.acorns.total };
+      g.skye = { x: 145, y: 148, tx: 145, ty: 148, facing: 1, cheer: 0 };
+      g.labrador = { x: 92, y: 416, tx: 92, ty: 416, facing: 1, cheer: 0 };
+      g.workshop = {
+        mode: lv.mode,
+        rounds: lv.rounds.map(r => ({
+          word: r.word,
+          onset: r.onset,
+          rime: r.rime,
+          onsets: r.onsets.slice(),
+          rimes: r.rimes.slice(),
+        })),
+        roundIdx: 0,
+        step: 'onset',
+        pickedOnset: '',
+        pickedRime: lv.mode === 'onset' ? lv.rounds[0].rime : '',
+        misses: 0,
+        assistGlow: false,
+        solved: lv.rounds.map(() => false),
+      };
+      g.events = [];
+      g.emit({ type: 'load', index: idx, id: lv.id });
+    },
+
+    start(i) {
+      g.load(i);
+      g.state = 'play';
+    },
+
+    currentRound() {
+      const w = g.workshop;
+      return w && w.rounds[w.roundIdx] ? w.rounds[w.roundIdx] : null;
+    },
+
+    currentChoices() {
+      const r = g.currentRound();
+      if (!r || !g.workshop) return [];
+      return g.workshop.step === 'rime' ? r.rimes : r.onsets;
+    },
+
+    resetIdle() {
+      g.idleTime = 0;
+      g.hintTarget = null;
+    },
+
+    computeHintTarget() {
+      if (g.state !== 'play') return null;
+      if (g.screen === 0) {
+        if (g.workshopReady) return { screen: 0, kind: 'workshop' };
+        const nextWord = g.hotspots.find(h => !h.opened && h.kind === 'word');
+        if (nextWord) return { screen: 0, kind: 'hotspot', id: nextWord.id };
+        const nextAny = g.hotspots.find(h => !h.opened);
+        return nextAny ? { screen: 0, kind: 'hotspot', id: nextAny.id } : null;
+      }
+      const w = g.workshop, r = g.currentRound();
+      if (!w || !r) return null;
+      const val = w.step === 'rime' ? r.rime : r.onset;
+      return { screen: 1, kind: 'stone', part: w.step, val };
+    },
+
+    tapHotspot(id) {
+      if (g.state !== 'play' || g.screen !== 0) return false;
+      const h = g.hotspots.find(x => x.id === id);
+      if (!h || h.opened) return false;
+      h.opened = true;
+      g.resetIdle();
+      g.skye.tx = Math.max(80, Math.min(STAGE_W - 80, h.x));
+      g.skye.ty = Math.max(95, Math.min(STAGE_H - 95, h.y - 36));
+      g.skye.facing = g.skye.tx >= g.skye.x ? 1 : -1;
+      g.skye.cheer = 1.1;
+      g.labrador.facing = h.x >= g.labrador.x ? 1 : -1;
+      g.labrador.cheer = 0.8;
+
+      if (h.kind === 'word') {
+        g.orbs.got++;
+        if (h.word && !g.orbs.words.includes(h.word)) g.orbs.words.push(h.word);
+        g.emit({ type: 'clue', id: h.id, kind: 'word', word: h.word, x: h.x, y: h.y, got: g.orbs.got, total: g.orbs.total });
+      } else if (h.kind === 'memory') {
+        g.memoryFound = true;
+        g.emit({ type: 'memory', id: h.id, x: h.x, y: h.y, memoryId: g.level().memoryId });
+      } else {
+        g.acorns.got++;
+        g.stars.got = g.acorns.got;
+        g.emit({ type: 'acorn', id: h.id, x: h.x, y: h.y, got: g.acorns.got, total: g.acorns.total });
+      }
+
+      if (g.orbs.got >= g.orbs.total && !g.workshopReady) {
+        g.workshopReady = true;
+        g.emit({ type: 'workshop_ready', screen: 0 });
+      }
+      if (g.hotspots.every(x => x.opened)) g.enterWorkshop(true);
+      return true;
+    },
+
+    enterWorkshop(auto) {
+      if (g.state !== 'play' || g.screen !== 0 || g.orbs.got < g.orbs.total) return false;
+      g.screen = 1;
+      g.resetIdle();
+      g.skye.tx = 175; g.skye.ty = 215; g.skye.facing = 1;
+      g.labrador.tx = 100; g.labrador.ty = 408; g.labrador.facing = 1;
+      g.emit({ type: 'screen2', auto: !!auto, mode: g.level().mode });
+      return true;
+    },
+
+    tapStone(choice) {
+      if (g.state !== 'play' || g.screen !== 1 || !g.workshop) return false;
+      const w = g.workshop, r = g.currentRound();
+      if (!r || w.step === 'done') return false;
+      const val = typeof choice === 'number' ? g.currentChoices()[choice] : String(choice || '');
+      if (!val) return false;
+      g.resetIdle();
+
+      const expected = w.step === 'rime' ? r.rime : r.onset;
+      if (val !== expected) {
+        w.misses++;
+        if (w.misses >= 2) {
+          w.assistGlow = true;
+          g.emit({ type: 'stone_assist', part: w.step, target: expected, word: r.word });
+        }
+        g.emit({ type: 'stone_try', part: w.step, val, expected, misses: w.misses });
+        return false;
+      }
+
+      if (w.step === 'onset') {
+        w.pickedOnset = val;
+        if (w.mode === 'blend') {
+          w.step = 'rime';
+          w.misses = 0;
+          w.assistGlow = false;
+          g.skye.cheer = 0.7;
+          g.emit({ type: 'stone_ok', part: 'onset', val, word: r.word, roundIdx: w.roundIdx });
+          return true;
+        }
+        w.pickedRime = r.rime;
+      } else {
+        w.pickedRime = val;
+      }
+
+      w.step = 'done';
+      w.misses = 0;
+      w.assistGlow = false;
+      w.solved[w.roundIdx] = true;
+      g.skye.cheer = 1.4;
+      g.labrador.cheer = 1.2;
+      g.emit({ type: 'word_blended', word: r.word, onset: r.onset, rime: r.rime, roundIdx: w.roundIdx });
+
+      const nextIdx = w.roundIdx + 1;
+      if (nextIdx >= w.rounds.length) {
+        const lastRoom = g.index >= LEVELS.length - 1;
+        g.state = lastRoom ? 'win' : 'clear';
+        g.emit({ type: lastRoom ? 'win' : 'clear', index: g.index, id: g.level().id });
+      } else {
+        w.roundIdx = nextIdx;
+        w.step = 'onset';
+        w.pickedOnset = '';
+        w.pickedRime = w.mode === 'onset' ? w.rounds[nextIdx].rime : '';
+      }
+      return true;
+    },
+
+    cheerFriend(who) {
+      if (who === 'skye') { g.skye.cheer = 1.0; g.emit({ type: 'cheer', who: 'skye' }); return true; }
+      if (who === 'labrador') { g.labrador.cheer = 1.0; g.emit({ type: 'cheer', who: 'labrador' }); return true; }
+      return false;
+    },
+
+    step(dt) {
+      if (g.state !== 'play') return;
+      const clamped = Math.min(0.05, Math.max(0, dt || 0));
+      g.time += clamped;
+      g.idleTime += clamped;
+      for (const ch of [g.skye, g.labrador]) {
+        const k = Math.min(1, clamped * 8);
+        ch.x += (ch.tx - ch.x) * k;
+        ch.y += (ch.ty - ch.y) * k;
+        if (ch.cheer > 0) ch.cheer = Math.max(0, ch.cheer - clamped);
+      }
+      if (!g.hintTarget && g.idleTime >= IDLE_HINT_SEC) {
+        g.hintTarget = g.computeHintTarget();
+        if (g.hintTarget) g.emit({ type: 'hint_auto', target: g.hintTarget });
+      }
+    },
+  };
+  return g;
+}
+</script>
+
+<script id="view">
+(() => {
+  /* Which pictures load when, and whether the offline worker may run. Plain global script: no DOM access. */
+  const ART_POSES = {
+    skye: ['idle', 'fly', 'cheer'],
+    labrador: ['idle', 'walk', 'search', 'cheer'],
+  };
+  /*TITLE_ART*/const ART_TITLE = [
+    "key.webp", "bg_woods.webp", "ui_meet.webp",
+    "fx_star.webp", "fx_heart.webp",
+    "prop_stump.webp", "prop_bush.webp", "prop_mushroom.webp", "prop_lily.webp", "prop_rock.webp", "prop_nest.webp",
+    "prop_orb.webp", "prop_postcard.webp", "prop_stone.webp", "prop_bench.webp",
+    "skye_idle.webp", "skye_fly.webp", "skye_cheer.webp", "portrait_skye.webp",
+    "labrador_idle.webp", "labrador_walk.webp", "labrador_search.webp", "labrador_cheer.webp", "portrait_labrador.webp"
+  ];/*END_TITLE_ART*/
+
+  function roomArt(level, lines, opts) {
+    const o = opts || {}, L = (lines && lines.lines) || {}, out = [];
+    const add = name => { if (name && !out.includes(name)) out.push(name); };
+    const lineArt = key => { const d = L[key]; if (d && d.art) add(d.art); };
+    add(level.bg);
+    for (const h of level.sceneA || []) add(h.prop);
+    ['prop_orb', 'prop_postcard', 'prop_stone', 'prop_bench', 'fx_star', 'fx_heart'].forEach(add);
+    (level.words || []).concat(o.extraWords || []).forEach(w => add(`word_${w}`));
+    lineArt(`ch_${level.id}`); lineArt(`clear_${level.id}`);
+    if (level.memoryId) lineArt(`mem_${level.memoryId}`);
+    if (o.last) { lineArt('win'); lineArt('end'); }
+    return out.concat(outfitArt(o.wear)).filter((n, i, a) => a.indexOf(n) === i);
+  }
+
+  function outfitArt(wear) {
+    const out = [];
+    for (const who of ['skye', 'labrador']) {
+      const w = wear && wear[who];
+      if (!w) continue;
+      if (w.dress === 1 || w.dress === 2) {
+        for (const f of ART_POSES[who]) out.push(`${who}_${f}_d${w.dress}`);
+      }
+      if (typeof w.hat === 'string' && w.hat) out.push(`hat_${w.hat}`);
+    }
+    return out;
+  }
+
+  function assetPlan(levels, lines, opts) {
+    const o = opts || {}, L = (lines && lines.lines) || {};
+    const arts = keys => keys.map(k => L[k] && L[k].art).filter(Boolean).filter((n, i, a) => a.indexOf(n) === i);
+    return {
+      title: ART_TITLE.map(f => f.replace(/\.webp$/, '')).concat(outfitArt(o.wear)).filter((n, i, a) => a.indexOf(n) === i),
+      prologue: arts(['p1', 'p2', 'p3']),
+      ending: arts(['win', 'end']),
+      rooms: levels.map((lv, i) => roomArt(lv, lines, { wear: o.wear, last: i === levels.length - 1 })),
+    };
+  }
+
+  function offlineWorkerAllowed(search, protocol, hasApi) {
+    return !!hasApi && /^https?:$/.test(String(protocol)) && !/[?&]dev=1\b/.test(String(search || ''));
+  }
+  /* Word-heard bookkeeping: saved counter and per-room dev counter. Plain global script, no DOM access. */
+  const heardLog = {};
+  function noteWordHeard(wordId) {
+    if (typeof wordId !== 'string' || !wordId) return;
+    if (!noteHeard(save.words, wordId, reviewContext(save))) return;
+    const word = WORDS.find(w => w.id === wordId);
+    const lv = LEVELS[game.index], room = (word && word.room) || (lv && lv.id) || '?';
+    const byRoom = heardLog[wordId] || (heardLog[wordId] = {});
+    byRoom[room] = (byRoom[room] || 0) + 1;
+    saveSoon();
+  }
+  /* Sizes and gamepad focus picking. Pure: no DOM access, no clock. Plain global script. */
+  const LAYOUT = Object.freeze({ stageW: 960, stageH: 520, minHitCss: 64, touchKeyCss: 72, refW: 1024, refH: 768, touchBarCss: 0, ringPad: 8 });
+
+  function layoutStageWidth(availW, availH) { return Math.max(240, Math.floor(Math.min(availW, availH * (LAYOUT.stageW / LAYOUT.stageH)))); }
+  function layoutStageHeight(width) { return Math.round(width / (LAYOUT.stageW / LAYOUT.stageH)); }
+  function layoutCssPx(units, stageCssW) { return units * stageCssW / LAYOUT.stageW; }
+  function layoutRefStageWidth() { return layoutStageWidth(LAYOUT.refW, LAYOUT.refH - LAYOUT.touchBarCss); }
+  function layoutHitMin(stageCssW) { return Math.ceil(LAYOUT.minHitCss * LAYOUT.stageW / (stageCssW || layoutRefStageWidth())); }
+  function layoutHitRadius(r, ring) { return Math.max(r + (ring ? LAYOUT.ringPad : 0), layoutHitMin() / 2); }
+
+  function layoutPadPick(dir, cur, rects) {
+    const from = rects[cur];
+    if (!from) return -1;
+    const fx = from.x + from.w / 2, fy = from.y + from.h / 2;
+    let best = -1, bestScore = Infinity;
+    rects.forEach((r, i) => {
+      if (i === cur) return;
+      const dx = r.x + r.w / 2 - fx, dy = r.y + r.h / 2 - fy;
+      const along = dir === 'r' ? dx : dir === 'l' ? -dx : dir === 'd' ? dy : -dy;
+      const across = dir === 'l' || dir === 'r' ? Math.abs(dy) : Math.abs(dx);
+      if (along <= 1 || across > 2 * along) return;
+      const score = along + 2 * across;
+      if (score < bestScore) { best = i; bestScore = score; }
+    });
+    return best;
+  }
+
+  function layoutPadStart(rects) {
+    if (!rects.length) return -1;
+    const i = rects.findIndex(r => r.pulse);
+    return i >= 0 ? i : 0;
+  }
+  /* When the room is live and nothing covers it. Plain global script, no DOM access. */
+  function canPlay() { return playFlow.phase === 'play' && game.state === 'play' && !storyIsOpen() && !uxState.modal && !isPortraitView(); }
+  /* Spaced review and quiz option picking. Pure: no storage, no DOM, no clock. Plain global script. */
+  const REVIEW_INTERVALS = [1, 3, 6, 12];
+  const REVIEW_GAP = 2;
+  const REVIEW_OLD_MAX = 2;
+
+  function rvNat(v) { return Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0; }
+  function rvClock(context) { return Math.max(1, rvNat(context && context.clock)); }
+  function rvValidId(id) { return typeof id === 'string' && id !== '' && id !== '__proto__'; }
+  function rvRecord(saveWords, id) {
+    if (!saveWords || typeof saveWords !== 'object' || !rvValidId(id)) return null;
+    const w = saveWords[id];
+    if (w && typeof w === 'object') return w;
+    return (saveWords[id] = { heard: 0, quiz: 0 });
+  }
+  function rvLearned(w) { return !!w && typeof w === 'object' && (rvNat(w.heard) > 0 || !!w.seen || rvNat(w.quiz) > 0 || rvNat(w.wrong) > 0); }
+  function rvOpenMiss(w) { return rvNat(w.wrong) > 0 && rvNat(w.lastWrong) >= rvNat(w.lastReviewed); }
+  function rvByText(a, b) { return a < b ? -1 : a > b ? 1 : 0; }
+
+  function rvShuffle(list, rng) {
+    for (let i = list.length - 1; i > 0; i--) {
+      const j = Math.min(i, Math.floor(rng() * (i + 1)));
+      const t = list[i]; list[i] = list[j]; list[j] = t;
+    }
+    return list;
+  }
+  function makeReviewRng(seed) {
+    let a = seed >>> 0;
+    return function () {
+      a = (a + 0x6D2B79F5) >>> 0;
+      let t = a;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function reviewContext(save) { return { clock: Math.max(1, rvNat(save && save.roomClock)) }; }
+  function reviewAdvanceClock(save) { save.roomClock = rvNat(save.roomClock) + 1; return save.roomClock; }
+  function reviewLearned(saveWords, ids) {
+    const out = [];
+    for (const id of ids || []) if (rvValidId(id) && !out.includes(id) && saveWords && rvLearned(saveWords[id])) out.push(id);
+    return out;
+  }
+
+  function reviewDue(saveWords, context) {
+    const clock = rvClock(context);
+    const skip = new Set((context && context.exclude) || []);
+    const open = [], spaced = [];
+    for (const id of Object.keys(saveWords || {})) {
+      const w = saveWords[id];
+      if (!rvValidId(id) || skip.has(id) || !rvLearned(w)) continue;
+      const lastReviewed = rvNat(w.lastReviewed);
+      if (lastReviewed > 0 && clock - lastReviewed < REVIEW_GAP) continue;
+      if (rvOpenMiss(w)) { open.push({ id, wrong: rvNat(w.wrong), at: rvNat(w.lastWrong) }); continue; }
+      const gap = REVIEW_INTERVALS[Math.min(rvNat(w.reviews), REVIEW_INTERVALS.length - 1)];
+      const overdue = clock - rvNat(w.lastSeen) - gap;
+      if (overdue >= 0) spaced.push({ id, overdue, quiz: rvNat(w.quiz) });
+    }
+    open.sort((a, b) => b.wrong - a.wrong || a.at - b.at || rvByText(a.id, b.id));
+    spaced.sort((a, b) => b.overdue - a.overdue || a.quiz - b.quiz || rvByText(a.id, b.id));
+    const ids = open.concat(spaced).map(x => x.id);
+    const limit = context && Number.isFinite(context.limit) ? Math.max(0, Math.floor(context.limit)) : ids.length;
+    return ids.slice(0, limit);
+  }
+
+  function recallWordsFor(prevRoomWords, saveWords, context) {
+    const prev = [];
+    for (const id of prevRoomWords || []) if (rvValidId(id) && !prev.includes(id)) prev.push(id);
+    const exclude = prev.concat((context && context.exclude) || []);
+    const older = reviewDue(saveWords, Object.assign({}, context, { exclude, limit: REVIEW_OLD_MAX }));
+    return prev.concat(older);
+  }
+
+  function recallOlderIds(prevRoomWords, recall) { return (recall || []).filter(id => !(prevRoomWords || []).includes(id)); }
+
+  function quizOptions(targetId, roomWords, learnedOtherRoomWords, saveWords, rng) {
+    const rand = typeof rng === 'function' ? rng : makeReviewRng(1);
+    const taken = new Set([targetId]);
+    const fresh = list => {
+      const out = [];
+      for (const id of list || []) if (rvValidId(id) && !taken.has(id) && !out.includes(id)) out.push(id);
+      return out;
+    };
+    const others = fresh(learnedOtherRoomWords);
+    const sameRoom = fresh(roomWords).filter(id => !others.includes(id));
+    const weight = id => {
+      const w = saveWords && saveWords[id];
+      return !w || typeof w !== 'object' ? 0 : rvOpenMiss(w) ? 2 : rvNat(w.wrong) > 0 ? 1 : 0;
+    };
+    const ranked = list => rvShuffle(list.slice(), rand).sort((a, b) => weight(b) - weight(a));
+    const picks = [targetId];
+    if (others.length) picks.push(ranked(others)[0]);
+    const rest = ranked(others.concat(sameRoom).filter(id => !picks.includes(id)));
+    while (picks.length < 3 && rest.length) picks.push(rest.shift());
+    return rvShuffle(picks, rand);
+  }
+
+  function noteHeard(saveWords, id, context) {
+    const w = rvRecord(saveWords, id);
+    if (!w) return null;
+    w.heard = rvNat(w.heard) + 1;
+    w.lastSeen = Math.max(rvNat(w.lastSeen), rvClock(context));
+    return w;
+  }
+  function noteQuizAnswer(saveWords, id, firstTry, context) {
+    const w = rvRecord(saveWords, id);
+    if (!w) return null;
+    const clock = rvClock(context);
+    const missedBefore = rvOpenMiss(w);
+    if (firstTry) {
+      w.quiz = rvNat(w.quiz) + 1;
+      if (missedBefore && clock > rvNat(w.lastWrong)) w.lastReviewed = Math.max(rvNat(w.lastReviewed), clock);
+    } else {
+      w.wrong = rvNat(w.wrong) + 1;
+      w.lastWrong = Math.max(rvNat(w.lastWrong), clock);
+    }
+    w.lastSeen = Math.max(rvNat(w.lastSeen), clock);
+    return w;
+  }
+  function noteReviewed(saveWords, id, context) {
+    const w = rvRecord(saveWords, id);
+    if (!w) return null;
+    const clock = rvClock(context);
+    w.reviews = rvNat(w.reviews) + 1;
+    w.lastReviewed = Math.max(rvNat(w.lastReviewed), clock);
+    w.lastSeen = Math.max(rvNat(w.lastSeen), clock);
+    return w;
+  }
+  /* Save data: shape, sanitizing, version check and merge. Pure functions, no DOM, no storage. Plain global script. */
+  const SETTING_CHECK = {
+    subtitles: v => typeof v === 'boolean',
+    english: v => v === 'words' || v === 'words+phrases',
+    sound: v => typeof v === 'boolean',
+  };
+  const SAVE_VERSION = 3;
+  const WORD_COUNTERS = ['wrong', 'lastSeen', 'lastWrong', 'lastReviewed', 'reviews'];
+
+  function defaultSave() {
+    return {
+      v: SAVE_VERSION,
+      settings: { subtitles: false, english: 'words+phrases', sound: true },
+      rooms: {},
+      words: {},
+      totalPlaySeconds: 0,
+      roomClock: 0,
+      stickers: [],
+      board: [],
+      outfit: { skye: { dress: 0, hat: null }, labrador: { dress: 0, hat: null } },
+      unlocked: { rooms: 1 },
+      flags: { prologue: false, tutorial: false, fullscreenTip: false },
+    };
+  }
+  const isObj = v => v !== null && typeof v === 'object' && !Array.isArray(v);
+  const nat = (v, d) => (Number.isFinite(v) && v >= 0 ? Math.floor(v) : d);
+  const bool3 = a => [0, 1, 2].map(i => !!(Array.isArray(a) && a[i]));
+
+  function sanitizeSave(raw) {
+    const s = defaultSave();
+    if (!isObj(raw)) return s;
+    for (const k of Object.keys(raw)) if (!(k in s) && k !== '__proto__') s[k] = raw[k];
+    if (isObj(raw.settings)) for (const k of Object.keys(SETTING_CHECK)) if (SETTING_CHECK[k](raw.settings[k])) s.settings[k] = raw.settings[k];
+    if (isObj(raw.rooms)) {
+      for (const id of Object.keys(raw.rooms)) {
+        const r = raw.rooms[id];
+        if (!isObj(r)) continue;
+        const stars = bool3(r.stars);
+        s.rooms[id] = { cleared: !!r.cleared, stars, memory: !!r.memory || stars[1] };
+      }
+    }
+    if (isObj(raw.words)) {
+      for (const id of Object.keys(raw.words)) {
+        const w = raw.words[id];
+        if (!isObj(w)) continue;
+        s.words[id] = { heard: nat(w.heard, 0), quiz: nat(w.quiz, 0) };
+        if (w.seen) s.words[id].seen = true;
+        for (const k of WORD_COUNTERS) if (nat(w[k], 0) > 0) s.words[id][k] = nat(w[k], 0);
+      }
+    }
+    if (Array.isArray(raw.stickers)) s.stickers = raw.stickers.filter(x => typeof x === 'string');
+    if (Array.isArray(raw.board)) s.board = raw.board.filter(b => isObj(b) && typeof b.id === 'string' && Number.isFinite(b.x) && Number.isFinite(b.y)).map(b => ({ id: b.id, x: b.x, y: b.y }));
+    if (isObj(raw.outfit)) {
+      for (const who of ['skye', 'labrador']) {
+        const o = raw.outfit[who];
+        if (isObj(o)) s.outfit[who] = { dress: nat(o.dress, 0), hat: typeof o.hat === 'string' ? o.hat : null };
+      }
+    }
+    s.totalPlaySeconds = nat(raw.totalPlaySeconds, 0);
+    s.roomClock = Number.isFinite(raw.roomClock) && raw.roomClock >= 0 ? nat(raw.roomClock, 0) : Object.keys(s.rooms).filter(id => s.rooms[id].cleared).length;
+    if (isObj(raw.unlocked)) s.unlocked.rooms = Math.max(1, nat(raw.unlocked.rooms, 1));
+    if (isObj(raw.flags)) for (const k of Object.keys(s.flags)) s.flags[k] = !!raw.flags[k];
+    return s;
+  }
+
+  function saveVersionTooNew(raw) { return isObj(raw) && Number.isFinite(raw.v) && raw.v > SAVE_VERSION; }
+  function storedSaveIsNewer(text) {
+    if (!text) return false;
+    try { return saveVersionTooNew(JSON.parse(text)); } catch (e) { return false; }
+  }
+
+  function mergeSaveInto(mine, theirs) {
+    if (!isObj(mine) || !isObj(theirs)) return mine;
+    for (const id of Object.keys(theirs.rooms || {})) {
+      const o = theirs.rooms[id];
+      const r = mine.rooms[id] || (mine.rooms[id] = { cleared: false, stars: [false, false, false], memory: false });
+      r.cleared = !!r.cleared || !!o.cleared;
+      r.memory = !!r.memory || !!o.memory;
+      if (!Array.isArray(r.stars)) r.stars = [false, false, false];
+      for (let i = 0; i < 3; i++) r.stars[i] = !!r.stars[i] || !!(o.stars && o.stars[i]);
+      if (r.memory) r.stars[1] = true;
+      if (r.cleared) r.stars[0] = true;
+      for (const k of Object.keys(o)) if (!(k in r)) r[k] = o[k];
+    }
+    for (const id of Object.keys(theirs.words || {})) {
+      const o = theirs.words[id];
+      const w = mine.words[id] || (mine.words[id] = { heard: 0, quiz: 0 });
+      w.heard = Math.max(nat(w.heard, 0), nat(o.heard, 0));
+      w.quiz = Math.max(nat(w.quiz, 0), nat(o.quiz, 0));
+      if (o.seen) w.seen = true;
+      for (const k of WORD_COUNTERS) if (nat(o[k], 0) > nat(w[k], 0)) w[k] = nat(o[k], 0);
+      for (const k of Object.keys(o)) if (!(k in w)) w[k] = o[k];
+    }
+    for (const id of theirs.stickers || []) if (!mine.stickers.includes(id)) mine.stickers.push(id);
+    for (const b of theirs.board || []) if (!mine.board.some(x => x.id === b.id)) mine.board.push({ id: b.id, x: b.x, y: b.y });
+    mine.totalPlaySeconds = Math.max(nat(mine.totalPlaySeconds, 0), nat(theirs.totalPlaySeconds, 0));
+    mine.roomClock = Math.max(nat(mine.roomClock, 0), nat(theirs.roomClock, 0));
+    mine.unlocked.rooms = Math.max(1, nat(mine.unlocked.rooms, 1), nat(theirs.unlocked && theirs.unlocked.rooms, 1));
+    for (const k of Object.keys(theirs.flags || {})) mine.flags[k] = !!mine.flags[k] || !!theirs.flags[k];
+    for (const k of Object.keys(theirs)) if (!(k in mine) && k !== '__proto__') mine[k] = theirs[k];
+    return mine;
+  }
+  function mergeSaves(a, b) { return mergeSaveInto(sanitizeSave(JSON.parse(JSON.stringify(a))), sanitizeSave(JSON.parse(JSON.stringify(b)))); }
+  /* The voice queue: lazy mp3 clips, priorities, word counting. Plain global script, no DOM access. */
+  const voice = (() => {
+    const FILE_WAIT = 2500, SILENT_MS = 350, CACHE_MAX = 24, QUEUE_MAX = 4, SLEEP_GRACE_MS = 1500;
+    const bufs = new Map();
+    const queue = [], listeners = [];
+    let cur = null, seq = 0, SUBS = null, subsAsked = false, subTimer = 0, uiTimer = 0, uiLast = { name: '', t: -1e9 };
+    const warned = new Set(), warnedFiles = new Set(), failures = new Map();
+    const reasons = new Map();
+    const storyOpen = () => typeof story !== 'undefined' && !!story;
+    function settle(job, ok, reason) { reasons.set(job.key, ok ? null : reason); job.resolve(ok); }
+    const speakable = t => /[\p{L}\p{N}]/u.test(t);
+    const lineDef = key => {
+      const L = typeof LINES === 'object' && LINES;
+      return (L && ((L.lines && L.lines[key]) || (L.pages && L.pages[key]))) || null;
+    };
+    const isEn = s => s && typeof s === 'object' && s.en !== undefined;
+    const hasEn = def => def.say.some(isEn);
+    const wordsOnly = () => { try { return typeof setting === 'function' && setting('english') === 'words'; } catch (e) { return false; } };
+    const wordText = id => (SUBS && SUBS.words && SUBS.words[id] && SUBS.words[id].en) || String(id);
+    const speakerOf = def => def.who !== 'companion' ? def.who : 'skye';
+    function segmentsOf(key, def, wMode) {
+      const e = SUBS && SUBS.lines && SUBS.lines[key];
+      if (e) return (wMode && e.w !== undefined ? e.w || [] : e.s).map(([text, en]) => ({ text, en: !!en }));
+      const out = [];
+      for (const s of def.say) {
+        if (typeof s === 'string') out.push({ text: s, en: false });
+        else if (s.w !== undefined) out.push({ text: wordText(s.w), en: true });
+        else if (!wMode) out.push({ text: s.en, en: true });
+        else if (s.zh) out.push({ text: s.zh, en: false });
+      }
+      return out.filter(x => x.text);
+    }
+    function loadSubs() {
+      if (subsAsked || typeof fetch !== 'function') return;
+      subsAsked = true;
+      fetch(assetURL('subs.json')).then(r => r.ok ? r.json() : null).then(j => { if (j && j.lines) SUBS = j; }).catch(() => {});
+    }
+    function load(file) {
+      if (!audio) return Promise.resolve(null);
+      let p = bufs.get(file);
+      if (p) bufs.delete(file);
+      else {
+        p = fetch(assetURL(file)).then(r => r.ok ? r.arrayBuffer() : null).then(b => b && new Promise((ok, no) => audio.decodeAudioData(b, ok, no))).catch(() => null);
+        p = p.then(b => {
+          if (b) { failures.delete(file); return b; }
+          const n = (failures.get(file) || 0) + 1;
+          failures.set(file, n);
+          if (!warnedFiles.has(file)) { warnedFiles.add(file); try { console.warn('voice: could not load', file); } catch (e) {} }
+          if (n < 2 && bufs.get(file) === p) bufs.delete(file);
+          return null;
+        });
+      }
+      bufs.set(file, p);
+      while (bufs.size > CACHE_MAX) bufs.delete(bufs.keys().next().value);
+      return p;
+    }
+    function emitSub(payload) { for (const fn of listeners) { try { fn(payload); } catch (e) {} } }
+    const inPlay = () => typeof game === 'object' && game.state === 'play' && !(typeof story !== 'undefined' && story);
+    function duck() {
+      voiceOn = cur !== null;
+      if (audio && bus) bus.music.gain.setTargetAtTime(musicLevel(), audio.currentTime, voiceOn ? .3 : .5);
+    }
+    function start(job) {
+      cur = job;
+      clearTimeout(subTimer);
+      emitSub(job.sub && job.segments.length ? { key: job.key, who: job.who, segments: job.segments, bubble: (job.who === 'labrador' || job.who === 'skye') && inPlay() } : null);
+      duck();
+      const go = buf => {
+        if (cur !== job) return;
+        if (!buf || !audio || !bus) { job.silent = true; job.timer = setTimeout(() => finish(job, false, 'missing'), SILENT_MS); return; }
+        const src = audio.createBufferSource();
+        src.buffer = buf; src.connect(bus.voice);
+        job.audible = soundWanted();
+        src.onended = () => finish(job, true);
+        job.src = src;
+        src.start(audio.currentTime + .08);
+        if (audio.state === 'suspended' || audio.state === 'interrupted') job.timer = setTimeout(() => finish(job, false, 'interrupted'), Math.ceil((buf.duration || 1) * 1000) + SLEEP_GRACE_MS);
+      };
+      if (job.file && audio) {
+        let t = 0;
+        Promise.race([load(job.file), new Promise(ok => { t = setTimeout(() => ok(null), FILE_WAIT); })]).then(b => { clearTimeout(t); go(b); });
+      } else Promise.resolve().then(() => go(null));
+    }
+    function finish(job, completed = false, why) {
+      if (cur !== job) return;
+      cur = null;
+      const heard = completed && job.audible && soundWanted();
+      if (heard) for (const id of job.words) countWordHeard(id);
+      clearTimeout(job.timer);
+      if (job.src) { job.src.onended = null; try { job.src.stop(); } catch (e) {} job.src = null; }
+      pump();
+      duck();
+      if (!cur && job.sub && job.segments.length) {
+        if (job.silent) { const keep = Math.max(0, Math.min(8000, job.segments.reduce((n, s) => n + s.text.length, 0) * 220) - SILENT_MS); subTimer = setTimeout(() => emitSub(null), Math.max(900, keep)); }
+        else emitSub(null);
+      }
+      settle(job, !!heard, why || (completed ? 'muted' : 'interrupted'));
+    }
+    function drop(job, why) { clearTimeout(job.expire); settle(job, false, why || 'interrupted'); }
+    function pump() { while (!cur && queue.length) { const j = queue.shift(); clearTimeout(j.expire); start(j); } }
+    function submit(job) {
+      if (job.tag === 'ui' && ((cur && cur.tag !== 'ui') || queue.some(j => j.tag !== 'ui'))) { settle(job, false, 'interrupted'); return; }
+      if (job.tag) for (let i = queue.length - 1; i >= 0; i--) if (queue[i].tag === job.tag) drop(queue.splice(i, 1)[0]);
+      if (job.interrupt && (!cur || cur.prio <= job.prio)) {
+        for (let i = queue.length - 1; i >= 0; i--) if (queue[i].prio <= job.prio) drop(queue.splice(i, 1)[0]);
+        if (cur) finish(cur);
+      }
+      if (!cur && !queue.length) { start(job); return; }
+      queue.push(job);
+      queue.sort((a, b) => b.prio - a.prio || a.seq - b.seq);
+      while (queue.length > QUEUE_MAX) drop(queue.pop());
+      if (isFinite(job.maxWait)) job.expire = setTimeout(() => { const i = queue.indexOf(job); if (i >= 0) { queue.splice(i, 1); drop(job, 'expired'); } }, job.maxWait);
+    }
+    function make(fields, opts) {
+      const prio = opts.priority != null ? opts.priority : 1;
+      return Object.assign({ prio, interrupt: !!opts.interrupt, tag: opts.tag || '', seq: ++seq, maxWait: opts.maxWait != null ? opts.maxWait : prio >= 2 ? Infinity : 4000,
+        sub: opts.subtitle !== false, words: [], segments: [], file: null, silent: false }, fields);
+    }
+    function line(key, opts) {
+      opts = opts || {};
+      loadSubs();
+      return new Promise(/** @param {(played?: boolean) => void} resolve */ resolve => {
+        const def = lineDef(key);
+        if (!def || !Array.isArray(def.say)) {
+          if (!warned.has(key)) { warned.add(key); try { console.warn('voice.line: no line', key); } catch (e) {} }
+          reasons.set(key, 'missing');
+          resolve(); return;
+        }
+        const who = speakerOf(def), wMode = wordsOnly() && hasEn(def), segments = segmentsOf(key, def, wMode);
+        const voiced = !wMode || def.say.some(s => typeof s === 'string' ? speakable(s) : s.w !== undefined || (s.zh && speakable(s.zh)));
+        const file = voiced ? `vo_${key}${def.who === 'companion' ? '__' + who : ''}${wMode ? '__w' : ''}.mp3` : null;
+        const EN_WORDS = new Set(['hello', 'yay', 'good']);
+        const words = [];
+        for (const s of def.say) {
+          if (!s || typeof s !== 'object') continue;
+          if (s.w !== undefined) words.push(s.w);
+          else if (!wMode && typeof s.en === 'string') {
+            for (const m of s.en.toLowerCase().matchAll(/[a-z]+/g)) if (EN_WORDS.has(m[0]) && !words.includes(m[0])) words.push(m[0]);
+          }
+        }
+        submit(make({ kind: 'line', key, who, file, segments, words, resolve }, opts));
+      });
+    }
+    function word(id, opts) {
+      opts = Object.assign({ interrupt: true, tag: 'word', maxWait: 1500, subtitle: false }, opts);
+      return new Promise(resolve => submit(make({ kind: 'word', key: 'word_' + id, who: 'skye', file: `word_${id}.mp3`, words: [id], resolve }, opts)));
+    }
+    function ui(name) {
+      if (storyOpen()) { clearTimeout(uiTimer); return; }
+      const now = performance.now();
+      if (name === uiLast.name && now - uiLast.t < 400) { clearTimeout(uiTimer); return; }
+      const run = () => { if (storyOpen()) return; uiLast = { name, t: performance.now() }; line('ui_' + name, { interrupt: true, priority: 0, tag: 'ui', maxWait: 600, subtitle: false }); };
+      clearTimeout(uiTimer);
+      const wait = uiLast.t + 400 - now;
+      if (wait > 0) uiTimer = setTimeout(run, wait); else run();
+    }
+    function stop() {
+      clearTimeout(uiTimer);
+      while (queue.length) drop(queue.pop());
+      if (cur) finish(cur);
+      clearTimeout(subTimer);
+      emitSub(null);
+    }
+    function suspend() {
+      stop();
+      duck();
+    }
+    function preload(keys) {
+      if (!audio) return Promise.resolve();
+      loadSubs();
+      const files = [];
+      for (const key of keys) {
+        const def = lineDef(key);
+        if (!def && /^word_/.test(key)) { files.push(key + '.mp3'); continue; }
+        if (!def || !Array.isArray(def.say)) continue;
+        const wMode = wordsOnly() && hasEn(def);
+        files.push(`vo_${key}${def.who === 'companion' ? '__' + speakerOf(def) : ''}${wMode ? '__w' : ''}.mp3`);
+      }
+      return files.reduce((p, f) => p.then(() => load(f)), Promise.resolve()).then(() => {});
+    }
+    return {
+      line, word, ui, stop, suspend, preload,
+      lastReason: key => reasons.has(key) ? reasons.get(key) : null,
+      wordInfo: id => (SUBS && SUBS.words && SUBS.words[id]) || null,
+      get busy() { return cur !== null; },
+      onSubtitle(fn) { listeners.push(fn); return () => { const i = listeners.indexOf(fn); if (i >= 0) listeners.splice(i, 1); }; },
+    };
+  })();
+  const NS = 'http://www.w3.org/2000/svg';
+  const $ = id => document.getElementById(id);
+  const DEV = /[?&]dev=1\b/.test(location.search);
+
+  const SAVE_KEY = 'forest.save';
+  function lsRead(key) { try { return window.localStorage.getItem(key); } catch (e) { return null; } }
+  function lsWrite(key, text) { try { window.localStorage.setItem(key, text); return true; } catch (e) { return false; } }
+
+  function loadSave() {
+    let raw = null;
+    try { const t = lsRead(SAVE_KEY); if (t) raw = JSON.parse(t); } catch (e) { raw = null; }
+    return sanitizeSave(raw);
+  }
+
+  const save = loadSave();
+  let saveTimer = 0;
+  function saveWrite() {
+    clearTimeout(saveTimer); saveTimer = 0;
+    if (storedSaveIsNewer(lsRead(SAVE_KEY))) return false;
+    try { return lsWrite(SAVE_KEY, JSON.stringify(save)); } catch (e) { return false; }
+  }
+  function saveSoon() { if (!saveTimer) saveTimer = setTimeout(saveWrite, 400); }
+  addEventListener('pagehide', () => { if (saveTimer) saveWrite(); });
+  addEventListener('storage', e => {
+    if (!e || e.key !== SAVE_KEY || !e.newValue) return;
+    let raw;
+    try { raw = JSON.parse(e.newValue); } catch (err) { return; }
+    if (!isObj(raw) || saveVersionTooNew(raw)) return;
+    const before = JSON.stringify(save);
+    mergeSaveInto(save, sanitizeSave(raw));
+    if (JSON.stringify(save) !== before) saveWrite();
+  });
+
+  function setting(key) {
+    const v = save.settings[key];
+    return SETTING_CHECK[key] && SETTING_CHECK[key](v) ? v : defaultSave().settings[key];
+  }
+  function setSetting(key, value) {
+    if (!SETTING_CHECK[key] || !SETTING_CHECK[key](value)) return false;
+    save.settings[key] = value;
+    saveWrite();
+    try { onSettingChanged(key, value); } catch (e) { console.error(e); }
+    return true;
+  }
+
+  const roomIndex = id => LEVELS.findIndex(lv => lv.id === id);
+  function markRoom(levelId, patch) {
+    const r = save.rooms[levelId] || (save.rooms[levelId] = { cleared: false, stars: [false, false, false], memory: false });
+    const p = patch || {};
+    if (p.cleared) r.cleared = true;
+    if (p.memory) r.memory = true;
+    if (Array.isArray(p.stars)) for (let i = 0; i < 3; i++) if (p.stars[i]) r.stars[i] = true;
+    if (r.memory) r.stars[1] = true;
+    if (r.cleared) r.stars[0] = true;
+    for (const k of Object.keys(p)) if (!['cleared', 'memory', 'stars'].includes(k)) r[k] = p[k];
+    if (r.cleared) {
+      const i = roomIndex(levelId);
+      if (i >= 0) save.unlocked.rooms = Math.max(save.unlocked.rooms, Math.min(LEVELS.length, i + 2));
+    }
+    saveWrite();
+    return r;
+  }
+  const unlockedRooms = () => Math.max(1, Math.min(LEVELS.length, save.unlocked.rooms));
+  function nextRoomIndex() {
+    const n = unlockedRooms();
+    for (let i = 0; i < n; i++) if (!(save.rooms[LEVELS[i].id] || {}).cleared) return i;
+    return n - 1;
+  }
+
+  const game = createGame();
+  const SIZES = {"bg_canopy":[1280,720,640],"bg_meadow":[1280,720,640],"bg_pond":[1280,720,640],"bg_woods":[1280,720,640],"fx_heart":[180,113,90],"fx_star":[180,173,90],"hat_crown":[110,73,55],"hat_detective":[110,73,55],"hat_wreath":[110,53,55],"key":[1280,720,640],"labrador_cheer":[236,256,118],"labrador_idle":[245,248,122],"labrador_search":[266,248,133],"labrador_walk":[299,248,149],"portrait_labrador":[220,220,110],"portrait_skye":[220,220,110],"prop_bench":[220,136,110],"prop_bush":[180,140,90],"prop_lily":[180,108,90],"prop_mushroom":[174,180,87],"prop_nest":[180,119,90],"prop_orb":[160,180,80],"prop_postcard":[180,111,90],"prop_rock":[180,149,90],"prop_stone":[220,153,110],"prop_stump":[180,141,90],"skye_cheer":[158,204,79],"skye_fly":[236,196,118],"skye_idle":[181,196,90],"story_open":[1280,720,640],"story_win":[1280,720,640],"ui_meet":[220,220,110],"word_bat":[220,134,110],"word_box":[220,146,110],"word_bug":[220,111,110],"word_cat":[210,220,105],"word_dig":[220,164,110],"word_dog":[220,215,110],"word_drum":[220,165,110],"word_duck":[220,194,110],"word_fly":[220,141,110],"word_fox":[207,220,103],"word_frog":[220,160,110],"word_hen":[220,167,110],"word_hop":[220,202,110],"word_hug":[211,220,105],"word_hum":[220,167,110],"word_log":[220,196,110],"word_mud":[220,103,110],"word_nap":[220,141,110],"word_net":[220,211,110],"word_pig":[220,185,110],"word_pup":[220,172,110],"word_run":[220,182,110],"word_sit":[220,194,110],"word_twig":[220,182,110]};
+  const ASSET_VERSION = "aec63c32b67e";
+  const assetURL = file => `game/${file}?v=${ASSET_VERSION}`;
+
+  const HD_NAMES = new Set(["bg_canopy","bg_meadow","bg_pond","bg_woods","fx_heart","fx_star","hat_crown","hat_detective","hat_wreath","key","labrador_cheer","labrador_cheer_d1","labrador_cheer_d2","labrador_idle","labrador_idle_d1","labrador_idle_d2","labrador_search","labrador_search_d1","labrador_search_d2","labrador_walk","labrador_walk_d1","labrador_walk_d2","portrait_labrador","portrait_skye","prop_bench","prop_bush","prop_lily","prop_mushroom","prop_nest","prop_orb","prop_postcard","prop_rock","prop_stone","prop_stump","skye_cheer","skye_cheer_d1","skye_cheer_d2","skye_fly","skye_fly_d1","skye_fly_d2","skye_idle","skye_idle_d1","skye_idle_d2","story_open","story_win"]);
+  const HD_FROM = 1700;
+  const hd = { on: false, ready: new Set(), asked: new Set(), live: new Set(), timer: 0 };
+  const ART_PATIENCE = 1500;
+  const artJobs = new Map();
+  const artWait = new Set();
+  const artLive = new Set();
+  const artStats = { requested: 0, decoded: 0, failed: 0 };
+  const artPending = name => artWait.has(name);
+
+  function hdWant(n) {
+    if (!hd.on || !HD_NAMES.has(n) || hd.asked.has(n) || artWait.has(n)) return;
+    hd.asked.add(n);
+    const im = new Image();
+    hd.live.add(im);
+    im.onload = () => { hd.live.delete(im); hd.ready.add(n); hdUpgradeSoon(); };
+    im.onerror = () => { hd.live.delete(im); hd.asked.delete(n); };
+    im.src = assetURL(`hd/${n}.webp`);
+  }
+  const SRC = n => {
+    hdWant(n);
+    const useHd = hd.ready.has(n) || (artWait.has(n) && hd.asked.has(n));
+    return assetURL(`${useHd ? 'hd/' : ''}${n}.webp`);
+  };
+  function hdDowngrade(name) {
+    for (const node of document.querySelectorAll('image, img')) {
+      const attr = node.tagName === 'IMG' ? 'src' : 'href';
+      if ((node.getAttribute(attr) || '').startsWith(`game/hd/${name}.webp`)) node.setAttribute(attr, assetURL(`${name}.webp`));
+    }
+  }
+  function hdUpgrade() {
+    hd.timer = 0;
+    for (const node of document.querySelectorAll('image, img')) {
+      const attr = node.tagName === 'IMG' ? 'src' : 'href';
+      const m = /^game\/([\w-]+)\.webp\?/.exec(node.getAttribute(attr) || '');
+      if (m && hd.ready.has(m[1])) node.setAttribute(attr, assetURL(`hd/${m[1]}.webp`));
+      else if (m) hdWant(m[1]);
+    }
+  }
+  function hdUpgradeSoon() { if (!hd.timer) hd.timer = setTimeout(hdUpgrade, 120); }
+  function hdFit(cssWidth) {
+    if (hd.on || !HD_NAMES.size || cssWidth * (window.devicePixelRatio || 1) <= HD_FROM) return;
+    hd.on = true;
+    hdUpgrade();
+  }
+
+  function loadArt(names, patience) {
+    const jobs = [];
+    for (const n of names) {
+      let p = artJobs.get(n);
+      if (!p) {
+        const wantHd = hd.on && HD_NAMES.has(n) && !hd.ready.has(n) && (typeof navigator === 'undefined' || navigator.onLine !== false);
+        const im = new Image();
+        artStats.requested++;
+        artWait.add(n); artLive.add(im);
+        if (wantHd) hd.asked.add(n);
+        im.src = assetURL(`${wantHd ? 'hd/' : ''}${n}.webp`);
+        const finishOk = usedHd => {
+          artWait.delete(n); artLive.delete(im); artStats.decoded++;
+          if (usedHd) { hd.ready.add(n); hdUpgradeSoon(); }
+        };
+        const finishFail = () => {
+          artWait.delete(n); artLive.delete(im); artStats.failed++; artJobs.delete(n);
+        };
+        p = im.decode().then(() => finishOk(wantHd), () => {
+          if (!wantHd) { finishFail(); return; }
+          hd.asked.delete(n);
+          hdDowngrade(n);
+          const sd = new Image();
+          artLive.add(sd);
+          sd.src = assetURL(`${n}.webp`);
+          return sd.decode().then(() => { artLive.delete(sd); finishOk(false); }, () => { artLive.delete(sd); finishFail(); });
+        });
+        artJobs.set(n, p);
+      }
+      jobs.push(p);
+    }
+    const all = Promise.all(jobs).then(() => {});
+    return patience > 0 ? Promise.race([all, new Promise(ok => setTimeout(ok, patience))]) : all;
+  }
+
+  function el(tag, attrs, parent) {
+    const n = document.createElementNS(NS, tag);
+    for (const k in attrs) n.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(n);
+    return n;
+  }
+  const img = (name, x, y, w, h, parent, extra) => el('image', Object.assign({ href: SRC(name), x, y, width: w, height: h, preserveAspectRatio: 'none' }, extra), parent);
+
+  function layer(id, beforeId) {
+    let g = $(id);
+    if (g) return g;
+    g = el('g', { id, 'aria-hidden': 'true' });
+    const before = beforeId && $(beforeId);
+    if (before && before.parentNode) before.parentNode.insertBefore(g, before);
+    else $('stage').appendChild(g);
+    return g;
+  }
+
+  /** @type {{ lines?: Record<string, any>, pages?: Record<string, any>, voices?: any }} */
+  const LINES = {"voices":{"labrador":{"zh":["elevenlabs:pz7hOfW7kgI9kF818eDS","-3%","eleven_v4"]},"skye":{"zh":["elevenlabs:BT0SH7Hb8NRPpT5xbCgg","+0%","eleven_v4"],"en":["elevenlabs:BT0SH7Hb8NRPpT5xbCgg","-8%","eleven_v4"]}},"lines":{"p1":{"who":"skye","say":["哇，拉布拉多警长！刚才一阵淘气的魔法风，把小动物们的声音橡果都吹散在森林里啦！"],"art":"story_open"},"p2":{"who":"labrador","say":["别着急，天天。我带上放大镜，你在天上巡逻，我们一起找回声音橡果，帮大家拼好名字和动作！"],"art":"story_open"},"p3":{"who":"skye","say":["太好啦！我先飞去橡果大树看看。出发喽，",{"en":"Hello!","zh":"你好！"}],"art":"key"},"ch_tree":{"who":"labrador","say":["第一站是橡果大树。点一点树洞和草丛，找出三颗发光的声音橡果吧！"],"art":"bg_woods"},"ch_pond":{"who":"labrador","say":["池塘边有扑通扑通的水花声，我们在荷叶和石头底下找线索。"],"art":"bg_pond"},"ch_meadow":{"who":"labrador","say":["阳光草地上草丛密密的，小动物就藏在花丛旁边。"],"art":"bg_meadow"},"ch_hill":{"who":"labrador","say":["松果山坡上松果滚来滚去，我们仔细听听谁在泥土里挖宝。"],"art":"bg_meadow"},"ch_hollow":{"who":"labrador","say":["来到树洞侦探站啦！这一关我们要用两块拼读音石，把单词完整拼出来。"],"art":"bg_woods"},"ch_nest":{"who":"labrador","say":["飞上树冠飞行台，风儿吹得树枝轻轻晃，谁在鸟窝旁边呢？"],"art":"bg_canopy"},"ch_creek":{"who":"labrador","say":["叮咚小溪真热闹，小脚丫踩进泥巴里，我们一起找线索吧！"],"art":"bg_pond"},"ch_camp":{"who":"labrador","say":["最后一站星光晚会！找回今天的声音橡果，晚会就要开场啦！"],"art":"bg_canopy"},"learn_cat":{"who":"skye","say":["听开头音，",{"w":"cat"},"，小猫 ",{"w":"cat"},"！跟我说，",{"w":"cat"},"！"]},"learn_bat":{"who":"skye","say":["听开头音，",{"w":"bat"},"，小蝙蝠 ",{"w":"bat"},"！跟我说，",{"w":"bat"},"！"]},"learn_nap":{"who":"skye","say":["听开头音，",{"w":"nap"},"，睡午觉 ",{"w":"nap"},"！跟我说，",{"w":"nap"},"！"]},"learn_frog":{"who":"skye","say":["听开头音，",{"w":"frog"},"，小青蛙 ",{"w":"frog"},"！跟我说，",{"w":"frog"},"！"]},"learn_log":{"who":"skye","say":["听开头音，",{"w":"log"},"，木头 ",{"w":"log"},"！跟我说，",{"w":"log"},"！"]},"learn_hop":{"who":"skye","say":["听开头音，",{"w":"hop"},"，蹦蹦跳 ",{"w":"hop"},"！跟我说，",{"w":"hop"},"！"]},"learn_pup":{"who":"skye","say":["听开头音，",{"w":"pup"},"，小狗 ",{"w":"pup"},"！跟我说，",{"w":"pup"},"！"]},"learn_bug":{"who":"skye","say":["听开头音，",{"w":"bug"},"，小瓢虫 ",{"w":"bug"},"！跟我说，",{"w":"bug"},"！"]},"learn_run":{"who":"skye","say":["听开头音，",{"w":"run"},"，奔跑 ",{"w":"run"},"！跟我说，",{"w":"run"},"！"]},"learn_pig":{"who":"skye","say":["听开头音，",{"w":"pig"},"，小猪 ",{"w":"pig"},"！跟我说，",{"w":"pig"},"！"]},"learn_twig":{"who":"skye","say":["听开头音，",{"w":"twig"},"，小树枝 ",{"w":"twig"},"！跟我说，",{"w":"twig"},"！"]},"learn_dig":{"who":"skye","say":["听开头音，",{"w":"dig"},"，挖一挖 ",{"w":"dig"},"！跟我说，",{"w":"dig"},"！"]},"learn_fox":{"who":"skye","say":["拼一拼，",{"w":"fox"},"，小狐狸 ",{"w":"fox"},"！跟我说，",{"w":"fox"},"！"]},"learn_box":{"who":"skye","say":["拼一拼，",{"w":"box"},"，木盒子 ",{"w":"box"},"！跟我说，",{"w":"box"},"！"]},"learn_sit":{"who":"skye","say":["拼一拼，",{"w":"sit"},"，坐下 ",{"w":"sit"},"！跟我说，",{"w":"sit"},"！"]},"learn_hen":{"who":"skye","say":["拼一拼，",{"w":"hen"},"，母鸡 ",{"w":"hen"},"！跟我说，",{"w":"hen"},"！"]},"learn_net":{"who":"skye","say":["拼一拼，",{"w":"net"},"，小网兜 ",{"w":"net"},"！跟我说，",{"w":"net"},"！"]},"learn_fly":{"who":"skye","say":["拼一拼，",{"w":"fly"},"，飞翔 ",{"w":"fly"},"！跟我说，",{"w":"fly"},"！"]},"learn_duck":{"who":"skye","say":["拼一拼，",{"w":"duck"},"，小鸭子 ",{"w":"duck"},"！跟我说，",{"w":"duck"},"！"]},"learn_mud":{"who":"skye","say":["拼一拼，",{"w":"mud"},"，泥巴 ",{"w":"mud"},"！跟我说，",{"w":"mud"},"！"]},"learn_hug":{"who":"skye","say":["拼一拼，",{"w":"hug"},"，拥抱 ",{"w":"hug"},"！跟我说，",{"w":"hug"},"！"]},"learn_dog":{"who":"skye","say":["拼一拼，",{"w":"dog"},"，狗狗 ",{"w":"dog"},"！跟我说，",{"w":"dog"},"！"]},"learn_drum":{"who":"skye","say":["拼一拼，",{"w":"drum"},"，小木鼓 ",{"w":"drum"},"！跟我说，",{"w":"drum"},"！"]},"learn_hum":{"who":"skye","say":["拼一拼，",{"w":"hum"},"，哼唱 ",{"w":"hum"},"！跟我说，",{"w":"hum"},"！"]},"recall_cat":{"who":"skye","say":["还记得 ",{"w":"cat"}," 吗？",{"w":"cat"},"，就是小猫！"]},"recall_bat":{"who":"skye","say":["还记得 ",{"w":"bat"}," 吗？",{"w":"bat"},"，就是小蝙蝠！"]},"recall_nap":{"who":"skye","say":["还记得 ",{"w":"nap"}," 吗？",{"w":"nap"},"，就是睡午觉！"]},"recall_frog":{"who":"skye","say":["还记得 ",{"w":"frog"}," 吗？",{"w":"frog"},"，就是小青蛙！"]},"recall_log":{"who":"skye","say":["还记得 ",{"w":"log"}," 吗？",{"w":"log"},"，就是木头！"]},"recall_hop":{"who":"skye","say":["还记得 ",{"w":"hop"}," 吗？",{"w":"hop"},"，就是蹦蹦跳！"]},"recall_pup":{"who":"skye","say":["还记得 ",{"w":"pup"}," 吗？",{"w":"pup"},"，就是小狗！"]},"recall_bug":{"who":"skye","say":["还记得 ",{"w":"bug"}," 吗？",{"w":"bug"},"，就是小瓢虫！"]},"recall_run":{"who":"skye","say":["还记得 ",{"w":"run"}," 吗？",{"w":"run"},"，就是奔跑！"]},"recall_pig":{"who":"skye","say":["还记得 ",{"w":"pig"}," 吗？",{"w":"pig"},"，就是小猪！"]},"recall_twig":{"who":"skye","say":["还记得 ",{"w":"twig"}," 吗？",{"w":"twig"},"，就是小树枝！"]},"recall_dig":{"who":"skye","say":["还记得 ",{"w":"dig"}," 吗？",{"w":"dig"},"，就是挖一挖！"]},"recall_fox":{"who":"skye","say":["还记得 ",{"w":"fox"}," 吗？",{"w":"fox"},"，就是小狐狸！"]},"recall_box":{"who":"skye","say":["还记得 ",{"w":"box"}," 吗？",{"w":"box"},"，就是木盒子！"]},"recall_sit":{"who":"skye","say":["还记得 ",{"w":"sit"}," 吗？",{"w":"sit"},"，就是坐下！"]},"recall_hen":{"who":"skye","say":["还记得 ",{"w":"hen"}," 吗？",{"w":"hen"},"，就是母鸡！"]},"recall_net":{"who":"skye","say":["还记得 ",{"w":"net"}," 吗？",{"w":"net"},"，就是小网兜！"]},"recall_fly":{"who":"skye","say":["还记得 ",{"w":"fly"}," 吗？",{"w":"fly"},"，就是飞翔！"]},"recall_duck":{"who":"skye","say":["还记得 ",{"w":"duck"}," 吗？",{"w":"duck"},"，就是小鸭子！"]},"recall_mud":{"who":"skye","say":["还记得 ",{"w":"mud"}," 吗？",{"w":"mud"},"，就是泥巴！"]},"recall_hug":{"who":"skye","say":["还记得 ",{"w":"hug"}," 吗？",{"w":"hug"},"，就是拥抱！"]},"case_tree":{"who":"labrador","say":["橡果大树下亮闪闪的！点一点树桩、草丛和石头，找齐三颗声音橡果！"]},"case_pond":{"who":"labrador","say":["荷叶池塘真清澈！点一点大荷叶、木头堆和石头后面找找看！"]},"case_meadow":{"who":"labrador","say":["阳光草地吹来花香，轻点磨菇和花丛，看看谁在躲猫猫！"]},"case_hill":{"who":"labrador","say":["松果山坡下面藏着好多小惊喜，快拿放大镜点一点探险吧！"]},"case_hollow":{"who":"labrador","say":["树洞侦探站到了，把树桩、草丛和蘑菇里的声音橡果都找出来吧！"]},"case_nest":{"who":"labrador","say":["我们到树冠飞行台啦！检查一下鸟窝和软软的云朵树枝吧！"]},"case_creek":{"who":"labrador","say":["小溪叮咚唱着歌，谁躲在石头和树丛旁边呢？点一点看看！"]},"case_camp":{"who":"labrador","say":["星光晚会马上开始，帮大家找到最后三颗声音橡果吧！"]},"spot_cat":{"who":"skye","say":["找到第一颗声音橡果啦！是小猫 ",{"w":"cat"},"！"]},"spot_bat":{"who":"skye","say":["看，亮晶晶的声音橡果！这是小蝙蝠 ",{"w":"bat"},"！"]},"spot_nap":{"who":"skye","say":["好暖和的声音橡果！这是睡午觉 ",{"w":"nap"},"！"]},"spot_frog":{"who":"skye","say":["扑通！荷叶下面藏着小青蛙 ",{"w":"frog"},"！"]},"spot_log":{"who":"skye","say":["找到啦！这是一截长木头 ",{"w":"log"},"！"]},"spot_hop":{"who":"skye","say":["哎呀，会弹跳的声音橡果！这是蹦蹦跳 ",{"w":"hop"},"！"]},"spot_pup":{"who":"skye","say":["汪汪！草丛里找到一只小狗 ",{"w":"pup"},"！"]},"spot_bug":{"who":"skye","say":["红红的小瓢虫飞出来啦，是 ",{"w":"bug"},"！"]},"spot_run":{"who":"skye","say":["跑得好快的声音橡果！是奔跑 ",{"w":"run"},"！"]},"spot_pig":{"who":"skye","say":["哼哼！找到粉粉的小猪 ",{"w":"pig"},"！"]},"spot_twig":{"who":"skye","say":["藏在松果旁边的，是小树枝 ",{"w":"twig"},"！"]},"spot_dig":{"who":"skye","say":["沙沙沙，谁在挖土呀？是挖一挖 ",{"w":"dig"},"！"]},"spot_fox":{"who":"skye","say":["哇，毛茸茸的大尾巴！找到小狐狸 ",{"w":"fox"},"！"]},"spot_box":{"who":"skye","say":["树洞里藏着一个木盒子 ",{"w":"box"},"！"]},"spot_sit":{"who":"skye","say":["乖乖坐好啦，这个动作叫 ",{"w":"sit"},"！"]},"spot_hen":{"who":"skye","say":["咯咯咯，鸟窝里住着母鸡 ",{"w":"hen"},"！"]},"spot_net":{"who":"skye","say":["帮我找到救援小网兜 ",{"w":"net"}," 啦！"]},"spot_fly":{"who":"skye","say":["展开翅膀高高飞，是飞翔 ",{"w":"fly"},"！"]},"spot_duck":{"who":"skye","say":["嘎嘎嘎，溪水里游着小鸭子 ",{"w":"duck"},"！"]},"spot_mud":{"who":"skye","say":["踩一脚软软的，这是泥巴 ",{"w":"mud"},"！"]},"spot_hug":{"who":"skye","say":["好温暖的橡果！这是拥抱 ",{"w":"hug"},"！"]},"spot_dog":{"who":"skye","say":["摇摇尾巴的好朋友，是狗狗 ",{"w":"dog"},"！"]},"spot_drum":{"who":"skye","say":["咚咚锵！找到了好听的小木鼓 ",{"w":"drum"},"！"]},"spot_hum":{"who":"skye","say":["轻轻哼一首歌，这是哼唱 ",{"w":"hum"},"！"]},"screen2_onset":{"who":"skye","say":["三颗声音橡果都找到啦！现在点选正确的开头音石，帮它们把单词拼起来吧！"]},"screen2_blend":{"who":"skye","say":["声音橡果集齐啦！先点开头音，再点尾音，把两块拼读音石合在一起吧！"]},"blend_cat":{"who":"skye","say":[{"en":"Yay!","zh":"耶！"},"拼对啦，",{"w":"cat"},"！小猫 ",{"w":"cat"}," 伸个懒腰！"]},"blend_bat":{"who":"skye","say":[{"en":"Yay!","zh":"耶！"},"拼对啦，",{"w":"bat"},"！小蝙蝠 ",{"w":"bat"}," 拍拍翅膀！"]},"blend_nap":{"who":"skye","say":[{"en":"Good job!","zh":"做得好！"},{"w":"nap"},"！大家靠在树叶上睡午觉 ",{"w":"nap"},"！"]},"blend_frog":{"who":"skye","say":[{"en":"Yay!","zh":"耶！"},"拼对啦，",{"w":"frog"},"！小青蛙 ",{"w":"frog"}," 咕呱笑！"]},"blend_log":{"who":"skye","say":[{"en":"Yay!","zh":"耶！"},"拼对啦，",{"w":"log"},"！漂在水上的大木头 ",{"w":"log"},"！"]},"blend_hop":{"who":"skye","say":[{"en":"Good job!","zh":"做得好！"},{"w":"hop"},"！青蛙跳荷叶，",{"w":"hop"},"！"]},"blend_pup":{"who":"skye","say":[{"en":"Yay!","zh":"耶！"},"拼对啦，",{"w":"pup"},"！小狗 ",{"w":"pup"}," 转圈圈！"]},"blend_bug":{"who":"skye","say":[{"en":"Yay!","zh":"耶！"},"拼对啦，",{"w":"bug"},"！小瓢虫 ",{"w":"bug"}," 点点头！"]},"blend_run":{"who":"skye","say":[{"en":"Good job!","zh":"做得好！"},{"w":"run"},"！在草地上快快奔跑 ",{"w":"run"},"！"]},"blend_pig":{"who":"skye","say":[{"en":"Yay!","zh":"耶！"},"拼对啦，",{"w":"pig"},"！小猪 ",{"w":"pig"}," 翘尾巴！"]},"blend_twig":{"who":"skye","say":[{"en":"Yay!","zh":"耶！"},"拼对啦，",{"w":"twig"},"！捡起一根小树枝 ",{"w":"twig"},"！"]},"blend_dig":{"who":"skye","say":[{"en":"Good job!","zh":"做得好！"},{"w":"dig"},"！用小铲子挖一挖 ",{"w":"dig"},"！"]},"blend_fox":{"who":"skye","say":[{"en":"Yay!","zh":"耶！"},"两块拼对啦，",{"w":"fox"},"！小狐狸 ",{"w":"fox"}," 招招手！"]},"blend_box":{"who":"skye","say":[{"en":"Yay!","zh":"耶！"},"拼对啦，",{"w":"box"},"！打开香香的木盒子 ",{"w":"box"},"！"]},"blend_sit":{"who":"skye","say":[{"en":"Good job!","zh":"做得好！"},{"w":"sit"},"！乖乖地在垫子上坐下 ",{"w":"sit"},"！"]},"blend_hen":{"who":"skye","say":[{"en":"Yay!","zh":"耶！"},"拼对啦，",{"w":"hen"},"！母鸡 ",{"w":"hen"}," 拍拍毛！"]},"blend_net":{"who":"skye","say":[{"en":"Yay!","zh":"耶！"},"拼对啦，",{"w":"net"},"！拿出神奇小网兜 ",{"w":"net"},"！"]},"blend_fly":{"who":"skye","say":[{"en":"Good job!","zh":"做得好！"},{"w":"fly"},"！一起展翅飞翔 ",{"w":"fly"},"！"]},"blend_duck":{"who":"skye","say":[{"en":"Yay!","zh":"耶！"},"拼对啦，",{"w":"duck"},"！小鸭子 ",{"w":"duck"}," 甩水珠！"]},"blend_mud":{"who":"skye","say":[{"en":"Yay!","zh":"耶！"},"拼对啦，",{"w":"mud"},"！扑通踩进软泥巴 ",{"w":"mud"},"！"]},"blend_hug":{"who":"skye","say":[{"en":"Good job!","zh":"做得好！"},{"w":"hug"},"！给我们一个大大的拥抱 ",{"w":"hug"},"！"]},"blend_dog":{"who":"skye","say":[{"en":"Yay!","zh":"耶！"},"拼对啦，",{"w":"dog"},"！狗狗 ",{"w":"dog"}," 摇尾巴！"]},"blend_drum":{"who":"skye","say":[{"en":"Yay!","zh":"耶！"},"拼对啦，",{"w":"drum"},"！咚咚咚敲响小木鼓 ",{"w":"drum"},"！"]},"blend_hum":{"who":"skye","say":[{"en":"Good job!","zh":"做得好！"},{"w":"hum"},"！跟着星星一起哼唱 ",{"w":"hum"},"！"]},"stone_try_1":{"who":"skye","say":["仔细听听这个音，好像不是这一块，再试一块吧！"]},"stone_try_2":{"who":"skye","say":["没事没事，点一点音石听发音，一定能拼对！"]},"stone_try_3":{"who":"labrador","say":["别着急，再换一块音石试试看！"]},"stone_assist":{"who":"skye","say":["看！亮起金色光圈的就是正确的拼读音石，点它试试！"]},"clue_1":{"who":"labrador","say":["真细心！我们找到一条新线索啦！"]},"clue_2":{"who":"labrador","say":["放大镜立功喽，又找到一个森林宝贝！"]},"clue_3":{"who":"labrador","say":["离解开案件越来越近啦，继续探索吧！"]},"clue_4":{"who":"labrador","say":["哇，又发现一颗闪闪发亮的星果！"]},"clear_tree":{"who":"skye","say":[{"w":"cat"},"、",{"w":"bat"},"，还有午睡的 ",{"w":"nap"},"！橡果大树的案子破啦！"]},"clear_pond":{"who":"skye","say":[{"w":"frog"}," 跳上了 ",{"w":"log"},"，",{"w":"hop"}," 的一声！池塘真热闹！"]},"clear_meadow":{"who":"skye","say":[{"w":"pup"}," 和 ",{"w":"bug"}," 在草地上开心奔跑 ",{"w":"run"},"，真棒！"]},"clear_hill":{"who":"skye","say":[{"w":"pig"}," 拿着 ",{"w":"twig"},"，用力挖呀挖 ",{"w":"dig"},"，找到了宝藏！"]},"clear_hollow":{"who":"skye","say":[{"w":"fox"}," 打开了 ",{"w":"box"},"，然后乖乖地 ",{"w":"sit"},"！太厉害啦！"]},"clear_nest":{"who":"skye","say":[{"w":"hen"}," 和 ",{"w":"net"}," 准备好了，我们一起 ",{"w":"fly"},"！"]},"clear_creek":{"who":"skye","say":[{"w":"duck"}," 不怕 ",{"w":"mud"},"，大家给我们一个温暖的 ",{"w":"hug"},"！"]},"clear_camp":{"who":"skye","say":[{"w":"dog"}," 敲响了 ",{"w":"drum"},"，所有人跟着一起 ",{"w":"hum"},"，星光晚会开始啦！"]},"quiz_cat":{"who":"skye","say":["听一听，哪个是 ",{"w":"cat"},"？点一点！"]},"quiz_bat":{"who":"skye","say":["听一听，哪个是 ",{"w":"bat"},"？点一点！"]},"quiz_nap":{"who":"skye","say":["听一听，哪个是 ",{"w":"nap"},"？点一点！"]},"quiz_frog":{"who":"skye","say":["听一听，哪个是 ",{"w":"frog"},"？点一点！"]},"quiz_log":{"who":"skye","say":["听一听，哪个是 ",{"w":"log"},"？点一点！"]},"quiz_hop":{"who":"skye","say":["听一听，哪个是 ",{"w":"hop"},"？点一点！"]},"quiz_pup":{"who":"skye","say":["听一听，哪个是 ",{"w":"pup"},"？点一点！"]},"quiz_bug":{"who":"skye","say":["听一听，哪个是 ",{"w":"bug"},"？点一点！"]},"quiz_run":{"who":"skye","say":["听一听，哪个是 ",{"w":"run"},"？点一点！"]},"quiz_pig":{"who":"skye","say":["听一听，哪个是 ",{"w":"pig"},"？点一点！"]},"quiz_twig":{"who":"skye","say":["听一听，哪个是 ",{"w":"twig"},"？点一点！"]},"quiz_dig":{"who":"skye","say":["听一听，哪个是 ",{"w":"dig"},"？点一点！"]},"quiz_fox":{"who":"skye","say":["听一听，哪个是 ",{"w":"fox"},"？点一点！"]},"quiz_box":{"who":"skye","say":["听一听，哪个是 ",{"w":"box"},"？点一点！"]},"quiz_sit":{"who":"skye","say":["听一听，哪个是 ",{"w":"sit"},"？点一点！"]},"quiz_hen":{"who":"skye","say":["听一听，哪个是 ",{"w":"hen"},"？点一点！"]},"quiz_net":{"who":"skye","say":["听一听，哪个是 ",{"w":"net"},"？点一点！"]},"quiz_fly":{"who":"skye","say":["听一听，哪个是 ",{"w":"fly"},"？点一点！"]},"quiz_duck":{"who":"skye","say":["听一听，哪个是 ",{"w":"duck"},"？点一点！"]},"quiz_mud":{"who":"skye","say":["听一听，哪个是 ",{"w":"mud"},"？点一点！"]},"quiz_hug":{"who":"skye","say":["听一听，哪个是 ",{"w":"hug"},"？点一点！"]},"quiz_dog":{"who":"skye","say":["听一听，哪个是 ",{"w":"dog"},"？点一点！"]},"quiz_drum":{"who":"skye","say":["听一听，哪个是 ",{"w":"drum"},"？点一点！"]},"quiz_hum":{"who":"skye","say":["听一听，哪个是 ",{"w":"hum"},"？点一点！"]},"quiz_right_1":{"who":"skye","say":[{"en":"Yay!","zh":"耶！"},{"en":"Good job!","zh":"做得好！"}]},"quiz_right_2":{"who":"skye","say":[{"en":"Good job!","zh":"做得好！"},"答对啦，你就是小侦探！"]},"quiz_right_3":{"who":"labrador","say":["完全正确！真是好听力！"]},"quiz_wrong_1":{"who":"skye","say":["再仔细听一听，换一张卡片点点看～"]},"quiz_wrong_2":{"who":"skye","say":["发光的那张就是正确答案哦，试一试！"]},"quiz_wrong_3":{"who":"labrador","say":["别灰心，我们再听一遍试试！"]},"ph_c":{"who":"skye","say":["C!"]},"ph_b":{"who":"skye","say":["B!"]},"ph_n":{"who":"skye","say":["N!"]},"ph_fr":{"who":"skye","say":["F, R!"]},"ph_l":{"who":"skye","say":["L!"]},"ph_h":{"who":"skye","say":["H!"]},"ph_p":{"who":"skye","say":["P!"]},"ph_r":{"who":"skye","say":["R!"]},"ph_tw":{"who":"skye","say":["T, W!"]},"ph_d":{"who":"skye","say":["D!"]},"ph_f":{"who":"skye","say":["F!"]},"ph_s":{"who":"skye","say":["S!"]},"ph_fl":{"who":"skye","say":["F, L!"]},"ph_m":{"who":"skye","say":["M!"]},"ph_dr":{"who":"skye","say":["D, R!"]},"ph_at":{"who":"skye","say":["at!"]},"ph_ap":{"who":"skye","say":["ap!"]},"ph_og":{"who":"skye","say":["og!"]},"ph_op":{"who":"skye","say":["op!"]},"ph_up":{"who":"skye","say":["up!"]},"ph_ug":{"who":"skye","say":["ug!"]},"ph_un":{"who":"skye","say":["un!"]},"ph_ig":{"who":"skye","say":["ig!"]},"ph_ox":{"who":"skye","say":["ox!"]},"ph_it":{"who":"skye","say":["it!"]},"ph_en":{"who":"skye","say":["en!"]},"ph_et":{"who":"skye","say":["et!"]},"ph_y":{"who":"skye","say":["eye!"]},"ph_uck":{"who":"skye","say":["uck!"]},"ph_ud":{"who":"skye","say":["ud!"]},"ph_um":{"who":"skye","say":["um!"]},"mem_m1":{"who":"labrador","say":["找到探案明信片！上面画着小猫和大树午睡前的小约定，我一直收在警长包里。"],"art":"bg_woods"},"mem_m2":{"who":"skye","say":["是池塘明信片！那天荷叶亮晶晶的，小青蛙还在木头上给我们表演了三连跳呢。"],"art":"bg_pond"},"mem_m3":{"who":"labrador","say":["这张草地照片太棒啦，小瓢虫停在我的警帽上，天天在旁边笑个不停。"],"art":"bg_meadow"},"mem_m4":{"who":"skye","say":["松果明信片！小猪挖出一颗比它还大的金色松果，请大家吃松果甜点。"],"art":"bg_meadow"},"mem_m5":{"who":"labrador","say":["树洞侦探站的纪念卡片，那时候小狐狸送了我们一个装满贴纸的木盒子。"],"art":"bg_woods"},"mem_m6":{"who":"skye","say":["从天上看整片森林真美！母鸡在鸟窝里挥挥翅膀，跟我说早安。"],"art":"bg_canopy"},"mem_m7":{"who":"labrador","say":["小溪探险明信片！虽然大家脚上都沾了点软泥巴，可是拥抱在一起暖呼呼的。"],"art":"bg_pond"},"mem_m8":{"who":"skye","say":["最亮的一张星光晚会明信片！全森林的好朋友都聚在一起敲鼓唱歌啦。"],"art":"bg_canopy"},"me_labrador":{"who":"labrador","say":["你好！我是拉布拉多警长。无论多小的线索，用放大镜仔细看都能找到，我们一起破案吧！"]},"me_skye":{"who":"skye","say":["你好，我是天天！我会飞到树梢侦察线索，还要教你用自然拼读把英文单词大声拼出来！"]},"win":{"who":"skye","say":[{"en":"Yay!","zh":"耶！"},"全森林的声音橡果都找回来啦！所有小动物都来参加星光晚会啦！"],"art":"story_win"},"end":{"who":"labrador","say":["真是一次了不起的森林大冒险，小侦探！快把今天拼出来的贴纸和照片收进我们的森林纪念册吧！"],"art":"story_win"},"tutor_tap":{"who":"skye","say":["点一点发光的大树桩或草丛，就能把藏起来的声音橡果找出来哦！"]},"tutor_phonics":{"who":"skye","say":["点下面的木头拼读音石，就能把单词拼完整！"]},"tutor_fullscreen":{"who":"skye","say":["给大人的小提示：点右上角的全屏按钮，画面会更清楚哦。"]},"idle_1":{"who":"labrador","say":["慢慢看，放大镜一直陪着你呢。"]},"idle_2":{"who":"skye","say":["要不要看看闪亮的小树丛？点一点有惊喜哦！"]},"idle_3":{"who":"skye","say":["不确定去哪儿的话，点右上角的小灯泡提示吧！"]},"idle_4":{"who":"labrador","say":["先听一听发音，再点对应的音石，不着急。"]},"ui_play":{"who":"skye","say":["开始探案"]},"ui_continue":{"who":"skye","say":["继续探案"]},"ui_next":{"who":"skye","say":["下一个"]},"ui_replay":{"who":"skye","say":["再玩一次"]},"ui_back":{"who":"skye","say":["回去"]},"ui_words":{"who":"skye","say":["单词本"]},"ui_stickers":{"who":"skye","say":["贴纸屋"]},"ui_wardrobe":{"who":"skye","say":["换装备"]},"ui_settings":{"who":"skye","say":["家长设置"]},"ui_hint":{"who":"skye","say":["小提示"]},"ui_fullscreen":{"who":"skye","say":["全屏"]},"ui_sound":{"who":"skye","say":["声音"]},"ui_quiz_skip":{"who":"skye","say":["跳过"]},"ui_meet":{"who":"skye","say":["认识小侦探"]},"ui_rooms":{"who":"skye","say":["选关卡"]},"ui_room_tree":{"who":"skye","say":["橡果大树"]},"ui_room_pond":{"who":"skye","say":["荷叶池塘"]},"ui_room_meadow":{"who":"skye","say":["阳光草地"]},"ui_room_hill":{"who":"skye","say":["松果山坡"]},"ui_room_hollow":{"who":"skye","say":["树洞侦探站"]},"ui_room_nest":{"who":"skye","say":["树冠飞行台"]},"ui_room_creek":{"who":"skye","say":["叮咚小溪"]},"ui_room_camp":{"who":"skye","say":["星光晚会"]},"cheer_1":{"who":"skye","say":[{"en":"Yay!","zh":"耶！"}]},"cheer_2":{"who":"skye","say":[{"en":"Good job!","zh":"做得好！"}]},"cheer_3":{"who":"labrador","say":["干得好，小侦探！"]},"cheer_4":{"who":"skye","say":[{"en":"Hello!","zh":"你好！"}]}}};
+  const WORDS = [{"id":"cat","en":"cat","onset":"c","rime":"at","zh":"小猫","icon":"word_cat","room":"tree","kind":"core"},{"id":"bat","en":"bat","onset":"b","rime":"at","zh":"小蝙蝠","icon":"word_bat","room":"tree","kind":"core"},{"id":"nap","en":"nap","onset":"n","rime":"ap","zh":"睡午觉","icon":"word_nap","room":"tree","kind":"core"},{"id":"frog","en":"frog","onset":"fr","rime":"og","zh":"小青蛙","icon":"word_frog","room":"pond","kind":"core"},{"id":"log","en":"log","onset":"l","rime":"og","zh":"木头","icon":"word_log","room":"pond","kind":"core"},{"id":"hop","en":"hop","onset":"h","rime":"op","zh":"蹦蹦跳","icon":"word_hop","room":"pond","kind":"core"},{"id":"pup","en":"pup","onset":"p","rime":"up","zh":"小狗","icon":"word_pup","room":"meadow","kind":"core"},{"id":"bug","en":"bug","onset":"b","rime":"ug","zh":"小瓢虫","icon":"word_bug","room":"meadow","kind":"core"},{"id":"run","en":"run","onset":"r","rime":"un","zh":"奔跑","icon":"word_run","room":"meadow","kind":"core"},{"id":"pig","en":"pig","onset":"p","rime":"ig","zh":"小猪","icon":"word_pig","room":"hill","kind":"core"},{"id":"twig","en":"twig","onset":"tw","rime":"ig","zh":"小树枝","icon":"word_twig","room":"hill","kind":"core"},{"id":"dig","en":"dig","onset":"d","rime":"ig","zh":"挖一挖","icon":"word_dig","room":"hill","kind":"core"},{"id":"fox","en":"fox","onset":"f","rime":"ox","zh":"小狐狸","icon":"word_fox","room":"hollow","kind":"core"},{"id":"box","en":"box","onset":"b","rime":"ox","zh":"木盒子","icon":"word_box","room":"hollow","kind":"core"},{"id":"sit","en":"sit","onset":"s","rime":"it","zh":"坐下","icon":"word_sit","room":"hollow","kind":"core"},{"id":"hen","en":"hen","onset":"h","rime":"en","zh":"母鸡","icon":"word_hen","room":"nest","kind":"core"},{"id":"net","en":"net","onset":"n","rime":"et","zh":"小网兜","icon":"word_net","room":"nest","kind":"core"},{"id":"fly","en":"fly","onset":"fl","rime":"y","zh":"飞翔","icon":"word_fly","room":"nest","kind":"core"},{"id":"duck","en":"duck","onset":"d","rime":"uck","zh":"小鸭子","icon":"word_duck","room":"creek","kind":"core"},{"id":"mud","en":"mud","onset":"m","rime":"ud","zh":"泥巴","icon":"word_mud","room":"creek","kind":"core"},{"id":"hug","en":"hug","onset":"h","rime":"ug","zh":"拥抱","icon":"word_hug","room":"creek","kind":"core"},{"id":"dog","en":"dog","onset":"d","rime":"og","zh":"狗狗","icon":"word_dog","room":"camp","kind":"core"},{"id":"drum","en":"drum","onset":"dr","rime":"um","zh":"小木鼓","icon":"word_drum","room":"camp","kind":"core"},{"id":"hum","en":"hum","onset":"h","rime":"um","zh":"哼唱","icon":"word_hum","room":"camp","kind":"core"},{"id":"hello","en":"Hello!","onset":"","rime":"","zh":"你好！","room":"tree","kind":"general"},{"id":"yay","en":"Yay!","onset":"","rime":"","zh":"太棒了！","room":"tree","kind":"general"},{"id":"good","en":"Good job!","onset":"","rime":"","zh":"做得好！","room":"tree","kind":"general"}];
+  const lineOf = key => (LINES.lines && LINES.lines[key]) || null;
+  const hasLineKey = key => !!lineOf(key);
+  function lineText(key) {
+    const L = lineOf(key);
+    if (!L || !Array.isArray(L.say)) return [];
+    return [L.say.map(seg => (typeof seg === 'string' ? seg : seg && seg.w ? seg.w : seg && seg.en ? seg.en : '')).join('')];
+  }
+
+  const wrap = (text, n) => {
+    const out = [];
+    let line = '';
+    for (const ch of text) {
+      if (line.length >= n && !'，。、！？：；」…—'.includes(ch)) { out.push(line); line = ''; }
+      line += ch;
+    }
+    if (line) out.push(line);
+    return out;
+  };
+
+  function fillPollen(box, n, big) {
+    if (!box) return;
+    for (let i = 0; i < n; i++) {
+      el('circle', {
+        class: 'mote', cx: Math.random() * 960, cy: 40 + Math.random() * 440,
+        r: big ? 2.4 + Math.random() * 2.2 : 1.0 + Math.random() * 1.4,
+        fill: i % 3 ? '#fff3b8' : '#d8ffbc', opacity: big ? .35 + Math.random() * .3 : .3 + Math.random() * .35,
+        style: `animation-duration:${(big ? 7 : 10) + Math.random() * 7}s;animation-delay:-${Math.random() * 15}s`,
+      }, box);
+    }
+  }
+  fillPollen($('motesBack'), 28, false);
+  fillPollen($('motesFront'), 10, true);
+  /* Woodland stage rendering: backdrop parallax, ambient wildlife, Scene A clue hotspots, and Scene B Phonics Sound Workshop. */
+  let sceneDrawn = { idx: -1, screen: -1, round: -1, step: '', workshopReady: false };
+
+  function drawStageStatic(lv) {
+    $('bg').setAttribute('href', SRC(lv.bg));
+    const glows = $('glows');
+    glows.textContent = '';
+    (lv.glows || []).forEach(([x, y, r, fill], i) => {
+      el('circle', { class: 'flicker', cx: x, cy: y, r, fill: `url(#${fill})`, style: `animation-delay:-${i * .8}s` }, glows);
+    });
+    drawAmbient(lv.ambient);
+  }
+
+  function drawAmbient(kind) {
+    const box = $('ambient');
+    box.textContent = '';
+    if (kind === 'butterflies') {
+      for (let i = 0; i < 4; i++) {
+        const g = el('g', { class: 'bobSlow', 'data-bf': i, style: `animation-delay:-${i * .7}s` }, box);
+        el('ellipse', { cx: -5, cy: 0, rx: 6, ry: 4, fill: i % 2 ? '#ffe599' : '#ffc2d9', opacity: '.85' }, g);
+        el('ellipse', { cx: 5, cy: 0, rx: 6, ry: 4, fill: i % 2 ? '#ffe599' : '#ffc2d9', opacity: '.85' }, g);
+      }
+    } else if (kind === 'fireflies') {
+      for (let i = 0; i < 8; i++) {
+        el('circle', {
+          class: 'flicker', cx: 100 + ((i * 109) % 760), cy: 110 + ((i * 73) % 240), r: 3.5 + (i % 2) * 1.5,
+          fill: '#ffe680', style: `animation-delay:-${i * .5}s`,
+        }, box);
+      }
+    } else if (kind === 'ripples') {
+      for (let i = 0; i < 4; i++) {
+        el('ellipse', {
+          class: 'flicker', cx: 210 + i * 175, cy: 360 + (i % 2) * 32, rx: 34, ry: 8,
+          fill: 'none', stroke: '#e8fbff', 'stroke-width': 1.8, opacity: '.5', style: `animation-delay:-${i * .9}s`,
+        }, box);
+      }
+    } else {
+      for (let i = 0; i < 5; i++) {
+        el('ellipse', {
+          class: 'bobSlow', cx: 120 + i * 175, cy: 120 + (i % 3) * 55, rx: 6, ry: 3.2,
+          fill: i % 2 ? '#f4b459' : '#9ed468', opacity: '.72', transform: `rotate(${25 - i * 12} ${120 + i * 175} ${120 + (i % 3) * 55})`,
+          style: `animation-delay:-${i * .6}s`,
+        }, box);
+      }
+    }
+  }
+
+  function updateAmbientMotion(now, panX) {
+    const bg = $('bg');
+    if (bg) bg.setAttribute('x', (-10 + panX * 6).toFixed(1));
+    $('glows').setAttribute('transform', `translate(${(panX * 9).toFixed(1)} 0)`);
+    $('ambient').querySelectorAll('[data-bf]').forEach((b, i) => {
+      const bx = 220 + i * 175 + Math.sin(now * .9 + i * 1.6) * 45;
+      const by = 180 + (i % 2) * 65 + Math.cos(now * 1.3 + i * 2.1) * 22;
+      b.setAttribute('transform', `translate(${bx.toFixed(1)} ${by.toFixed(1)})`);
+    });
+  }
+
+  function drawSceneA(g) {
+    $('workshop').textContent = '';
+    const box = $('hotspots');
+    box.textContent = '';
+    for (const h of g.hotspots) {
+      const grp = el('g', {
+        class: 'hotspot', 'data-hot': h.id, role: 'button', tabindex: '0',
+        'aria-label': h.kind === 'word' && h.word ? h.word : (h.kind === 'memory' ? '明信片' : '金星果'),
+        transform: `translate(${h.x} ${h.y})`,
+      }, box);
+      // Generous invisible hit circle >= 92 stage units (~90 CSS px at 1024x768)
+      el('circle', { r: Math.max(h.r, 46), fill: 'transparent' }, grp);
+      el('ellipse', { cx: 0, cy: 36, rx: 38, ry: 9, fill: '#0b1811', opacity: '.28' }, grp);
+      if (!h.opened) {
+        const ringCol = h.kind === 'memory' ? '#ff9ec4' : '#ffe48f';
+        el('circle', { class: 'flicker', r: h.r - 4, fill: 'none', stroke: ringCol, 'stroke-width': 2.6, opacity: '.55' }, grp);
+      }
+      const [pw, ph] = SIZES[h.prop] || [140, 140];
+      const scale = 86 / Math.max(pw, ph);
+      const dw = pw * scale, dh = ph * scale;
+      img(h.prop, -dw / 2, -dh / 2 - 4, dw, dh, grp, { opacity: h.opened ? '.52' : '1' });
+
+      if (h.opened) {
+        const reward = h.kind === 'word' ? 'prop_orb' : h.kind === 'memory' ? 'prop_postcard' : 'fx_star';
+        img(reward, -18, -54, 36, 36, grp);
+      } else {
+        el('circle', { cx: 0, cy: -36, r: 5, fill: '#fff5ba', opacity: '.85', class: 'flicker' }, grp);
+      }
+      grp.addEventListener('click', () => onHotspotClick(h.id));
+      grp.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onHotspotClick(h.id); } });
+    }
+
+    if (g.workshopReady) {
+      const wb = el('g', { class: 'ux-btn ux-pulse', 'data-act': 'enter-workshop', role: 'button', tabindex: '0', 'aria-label': '进入拼读工坊', transform: 'translate(840 430)' }, box);
+      el('circle', { r: 62, fill: 'url(#warm)' }, wb);
+      const vis = el('g', { class: 'btn-vis' }, wb);
+      el('circle', { r: 44, fill: 'url(#goldGrad)', stroke: '#fff7de', 'stroke-width': 4, filter: 'url(#softShadow)' }, vis);
+      img('prop_bench', -30, -28, 60, 56, vis);
+      wb.addEventListener('click', () => onEnterWorkshop());
+      wb.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEnterWorkshop(); } });
+    }
+  }
+
+  function drawSceneB(g) {
+    $('hotspots').textContent = '';
+    const box = $('workshop');
+    box.textContent = '';
+    const w = g.workshop, round = g.currentRound();
+    if (!w || !round) return;
+
+    // Workbench surface
+    const [bw, bh] = SIZES.prop_bench || [220, 150];
+    const bScale = 360 / bw;
+    img('prop_bench', 480 - (bw * bScale) / 2, 250, bw * bScale, bh * bScale, box);
+
+    // Rescued animal / target illustration centerpiece neatly below the Phonics Plaque
+    const animalOuter = el('g', { transform: 'translate(480 202)' }, box);
+    const animalG = el('g', { id: 'wsAnimal' }, animalOuter);
+    el('circle', { r: 78, fill: 'url(#sun)', class: 'flicker' }, animalG);
+    el('ellipse', { cx: 0, cy: 56, rx: 52, ry: 11, fill: '#0b1811', opacity: '.28' }, animalG);
+    const wIcon = 'word_' + round.word;
+    const [ww, wh] = SIZES[wIcon] || [200, 200];
+    const ws = 118 / Math.max(ww, wh);
+    img(wIcon, -(ww * ws) / 2, -(wh * ws) / 2 - 2, ww * ws, wh * ws, animalG);
+
+    // Sound-Bridge Phonics Plaque: [ _ ] + [ rime ] or [ _ ] + [ _ ]
+    const plaque = el('g', { transform: 'translate(480 84)', filter: 'url(#softShadow)' }, box);
+    el('rect', { x: -165, y: -34, width: 330, height: 68, rx: 22, fill: '#fff8e7', stroke: '#d6a44e', 'stroke-width': 4 }, plaque);
+
+    const drawSlot = (cx, text, filled, active) => {
+      el('rect', {
+        x: cx - 64, y: -24, width: 128, height: 48, rx: 15,
+        fill: filled ? '#ffd97d' : (active ? '#fff0c4' : '#e6edd8'),
+        stroke: active ? '#e67e22' : '#9db58d', 'stroke-width': active ? 3.5 : 2,
+      }, plaque);
+      const t = el('text', {
+        class: 'latin', x: cx, y: 10, 'text-anchor': 'middle', 'font-size': 32,
+        fill: filled ? '#5a2e08' : '#73856b',
+      }, plaque);
+      t.textContent = text || '?';
+    };
+    drawSlot(-74, w.pickedOnset || (w.step === 'onset' ? '?' : round.onset), !!w.pickedOnset, w.step === 'onset');
+    const plus = el('text', { class: 'latin', x: 0, y: 9, 'text-anchor': 'middle', 'font-size': 28, fill: '#8e6b3e' }, plaque);
+    plus.textContent = '+';
+    const rimeText = w.mode === 'onset' ? round.rime : (w.pickedRime || '?');
+    drawSlot(74, rimeText, w.mode === 'onset' || !!w.pickedRime, w.step === 'rime');
+
+    // Progress dots across the 3 words in the round
+    for (let i = 0; i < w.rounds.length; i++) {
+      el('circle', {
+        cx: 452 + i * 28, cy: 28, r: w.solved[i] ? 8 : (i === w.roundIdx ? 9 : 6),
+        fill: w.solved[i] ? '#ffd27a' : (i === w.roundIdx ? '#fff8d6' : '#587863'),
+        stroke: '#fff7e6', 'stroke-width': 2,
+      }, box);
+    }
+
+    // 3 large wooden Phonics Sound Stones along bottom row (>= 100px hit area)
+    const choices = g.currentChoices();
+    const xs = [265, 480, 695];
+    choices.forEach((chunk, idx) => {
+      const cx = xs[idx], cy = 428;
+      const expected = w.step === 'rime' ? round.rime : round.onset;
+      const glowAssist = w.assistGlow && chunk === expected;
+      const btn = el('g', {
+        class: 'stone-btn' + (glowAssist ? ' ux-pulse' : ''), 'data-stone': chunk,
+        role: 'button', tabindex: '0', 'aria-label': chunk, transform: `translate(${cx} ${cy})`,
+      }, box);
+      el('rect', { x: -72, y: -56, width: 144, height: 112, rx: 28, fill: 'transparent' }, btn);
+      if (glowAssist) {
+        el('rect', { class: 'flicker', x: -70, y: -52, width: 140, height: 104, rx: 26, fill: 'none', stroke: '#ffd27a', 'stroke-width': 5 }, btn);
+      }
+      const vis = el('g', { class: 'stone-vis', filter: 'url(#softShadow)' }, btn);
+      img('prop_stone', -68, -48, 136, 96, vis);
+      const lbl = el('text', {
+        class: 'latin', x: 0, y: 12, 'text-anchor': 'middle', 'font-size': 42, fill: '#4e2706',
+        stroke: '#fff6de', 'stroke-width': 3, 'paint-order': 'stroke',
+      }, vis);
+      lbl.textContent = chunk;
+
+      btn.addEventListener('pointerenter', () => onStoneHover(chunk));
+      btn.addEventListener('focus', () => onStoneHover(chunk));
+      btn.addEventListener('click', () => onStoneClick(chunk, btn));
+      btn.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onStoneClick(chunk, btn); } });
+    });
+  }
+
+  function renderStage(g, force) {
+    const lv = g.level();
+    const w = g.workshop;
+    const needStatic = force || sceneDrawn.idx !== g.index;
+    const needScene = needStatic || sceneDrawn.screen !== g.screen || sceneDrawn.workshopReady !== g.workshopReady
+      || (g.screen === 1 && w && (sceneDrawn.round !== w.roundIdx || sceneDrawn.step !== w.step || sceneDrawn.assist !== w.assistGlow || sceneDrawn.pickedOnset !== w.pickedOnset));
+    if (needStatic) drawStageStatic(lv);
+    if (needScene) {
+      if (g.screen === 0) drawSceneA(g);
+      else drawSceneB(g);
+      sceneDrawn = {
+        idx: g.index, screen: g.screen, round: w ? w.roundIdx : -1, step: w ? w.step : '',
+        workshopReady: g.workshopReady, assist: !!(w && w.assistGlow), pickedOnset: w ? w.pickedOnset : '',
+      };
+      if (typeof syncHud === 'function') syncHud();
+    }
+  }
+  /* Hero pup rendering (Skye hovering + Sheriff Labrador standing/searching), grounded shadows, outfit & hat overlays, and pointer-tap cheers. */
+  const pupState = { built: false, skyePose: '', labPose: '', skyeDress: -1, labDress: -1, skyeHat: null, labHat: null, panX: 0 };
+
+  function placeHat(parent, who, pose, hat) {
+    if (!hat) return;
+    const hName = 'hat_' + hat;
+    if (!SIZES[hName]) return;
+    const [hw, hh] = SIZES[hName];
+    const scale = who === 'skye' ? .42 : .45;
+    const w = hw * scale, h = hh * scale;
+    const dx = who === 'skye'
+      ? (pose === 'fly' ? 14 : (pose === 'idle' ? 10 : 2))
+      : (pose === 'cheer' ? 12 : (pose === 'search' ? 38 : 34));
+    const dy = who === 'skye'
+      ? (pose === 'cheer' ? -114 : -106)
+      : (pose === 'cheer' ? -130 : (pose === 'search' ? -98 : -118));
+    img(hName, dx - w / 2, dy - h / 2, w, h, parent);
+  }
+
+  function buildActors() {
+    const box = $('actors');
+    const sh = $('shadows');
+    box.textContent = '';
+    sh.textContent = '';
+    el('ellipse', { id: 'shLab', cx: 120, cy: 430, rx: 46, ry: 11, fill: '#0b1811', opacity: '.32' }, sh);
+    el('ellipse', { id: 'shSkye', cx: 165, cy: 410, rx: 32, ry: 8, fill: '#0b1811', opacity: '.22' }, sh);
+
+    const labG = el('g', { id: 'actLab', class: 'hotspot', role: 'button', tabindex: '0', 'aria-label': '拉布拉多警长' }, box);
+    const skyeG = el('g', { id: 'actSkye', class: 'hotspot', role: 'button', tabindex: '0', 'aria-label': '天天' }, box);
+    labG.addEventListener('click', () => onPupTap('labrador'));
+    skyeG.addEventListener('click', () => onPupTap('skye'));
+    pupState.built = true;
+    pupState.skyePose = '';
+    pupState.labPose = '';
+  }
+
+  function dressReady(who, k) {
+    return (k === 1 || k === 2) && !!SIZES[`${who}_idle`] && (who === 'skye' ? !!SIZES.skye_fly : !!SIZES.labrador_walk);
+  }
+
+  function spriteFile(who, pose, dress) {
+    return (dress === 1 || dress === 2) && dressReady(who, dress) ? `${who}_${pose}_d${dress}` : `${who}_${pose}`;
+  }
+
+  function renderPupNode(node, who, pose, outfit) {
+    node.textContent = '';
+    const baseKey = `${who}_${pose}`;
+    const [pw, ph] = SIZES[baseKey] || (who === 'skye' ? [190, 190] : [220, 240]);
+    const scale = 0.52;
+    const dw = pw * scale, dh = ph * scale;
+    img(spriteFile(who, pose, outfit.dress), -dw / 2, -dh, dw, dh, node);
+    placeHat(node, who, pose, outfit.hat);
+  }
+
+  function renderPups(g, now) {
+    if (!pupState.built) buildActors();
+    const oS = (save.outfit && save.outfit.skye) || { dress: 0, hat: null };
+    const oL = (save.outfit && save.outfit.labrador) || { dress: 0, hat: null };
+    const skyePose = g.skye.cheer > 0.05 ? 'cheer' : (g.screen === 0 ? 'fly' : 'idle');
+    const labPose = g.labrador.cheer > 0.05 ? 'cheer' : (g.screen === 0 ? 'search' : 'idle');
+
+    const skyeG = $('actSkye'), labG = $('actLab');
+    if (pupState.skyePose !== skyePose || pupState.skyeDress !== oS.dress || pupState.skyeHat !== oS.hat) {
+      renderPupNode(skyeG, 'skye', skyePose, oS);
+      pupState.skyePose = skyePose; pupState.skyeDress = oS.dress; pupState.skyeHat = oS.hat;
+    }
+    if (pupState.labPose !== labPose || pupState.labDress !== oL.dress || pupState.labHat !== oL.hat) {
+      renderPupNode(labG, 'labrador', labPose, oL);
+      pupState.labPose = labPose; pupState.labDress = oL.dress; pupState.labHat = oL.hat;
+    }
+
+    const hoverBob = Math.sin(now * 3.1) * 5;
+    const sqY = g.skye.cheer > 0 ? 1 + Math.sin(g.skye.cheer * 14) * 0.06 : 1;
+    const sx = g.skye.x, sy = g.skye.y + hoverBob;
+    skyeG.setAttribute('transform', `translate(${sx.toFixed(1)} ${sy.toFixed(1)}) scale(${g.skye.facing} ${sqY.toFixed(3)})`);
+    const lx = g.labrador.x, ly = g.labrador.y + 28;
+    const lsq = g.labrador.cheer > 0 ? 1 + Math.sin(g.labrador.cheer * 12) * 0.05 : 1;
+    labG.setAttribute('transform', `translate(${lx.toFixed(1)} ${ly.toFixed(1)}) scale(${g.labrador.facing} ${lsq.toFixed(3)})`);
+
+    // Grounded shadows scale dynamically with hover height
+    const shSkye = $('shSkye'), shLab = $('shLab');
+    const groundY = 428;
+    const dist = Math.max(0, groundY - sy);
+    const sScale = Math.max(0.42, 1 - dist / 480);
+    if (shSkye) {
+      shSkye.setAttribute('cx', sx.toFixed(1));
+      shSkye.setAttribute('cy', String(groundY));
+      shSkye.setAttribute('rx', (36 * sScale).toFixed(1));
+      shSkye.setAttribute('ry', (9 * sScale).toFixed(1));
+    }
+    if (shLab) {
+      shLab.setAttribute('cx', lx.toFixed(1));
+      shLab.setAttribute('cy', ly.toFixed(1));
+    }
+  }
+  /* Particle bursts, confetti, flying orb arcs, and 12s idle magnifying-glass sparkle guide. */
+  const fxList = [];
+
+  function uxConfetti(parent, x, y, count) {
+    const host = parent || $('fx');
+    const cols = ['#ffd27a', '#ff8cb8', '#9be88d', '#8cd6ff', '#ffffff'];
+    for (let i = 0; i < (count || 16); i++) {
+      const a = (Math.PI * 2 * i) / (count || 16) + Math.random() * .4;
+      const sp = 55 + Math.random() * 95;
+      const node = el('circle', { cx: x, cy: y, r: 3.2 + Math.random() * 2.5, fill: cols[i % cols.length] }, host);
+      fxList.push({ node, x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 45, g: 210, t: 0, dur: .75 + Math.random() * .35, kind: 'pop' });
+    }
+  }
+
+  function spawnOrbArc(fromX, fromY, toX, toY) {
+    const box = $('fx');
+    const node = img('prop_orb', -20, -20, 40, 40, box);
+    fxList.push({ node, x: fromX, y: fromY, sx: fromX, sy: fromY, tx: toX, ty: toY, t: 0, dur: .65, kind: 'arc' });
+  }
+
+  function renderIdleGuide(g, now) {
+    let guide = $('guideRing');
+    if (!g.hintTarget || g.state !== 'play') {
+      if (guide) guide.remove();
+      return;
+    }
+    if (!guide) guide = el('g', { id: 'guideRing', 'pointer-events': 'none' }, $('fx'));
+    let gx = 480, gy = 300;
+    if (g.hintTarget.screen === 0) {
+      if (g.hintTarget.kind === 'workshop') { gx = 840; gy = 430; }
+      else {
+        const h = g.hotspots.find(x => x.id === g.hintTarget.id);
+        if (h) { gx = h.x; gy = h.y; }
+      }
+    } else if (g.hintTarget.screen === 1) {
+      const choices = g.currentChoices();
+      const idx = choices.indexOf(g.hintTarget.val);
+      gx = [265, 480, 695][idx >= 0 ? idx : 1];
+      gy = 428;
+    }
+    const r = 52 + Math.sin(now * 5) * 6;
+    guide.innerHTML = `<circle cx="${gx}" cy="${gy}" r="${r.toFixed(1)}" fill="none" stroke="#ffd27a" stroke-width="5" stroke-dasharray="10 6" opacity=".92"/>
+      <circle cx="${gx}" cy="${gy}" r="${(r - 12).toFixed(1)}" fill="#ffe89c" opacity=".16"/>`;
+  }
+
+  function fxTick(dt, now, g) {
+    for (let i = fxList.length - 1; i >= 0; i--) {
+      const f = fxList[i];
+      f.t += dt;
+      const p = Math.min(1, f.t / f.dur);
+      if (f.kind === 'arc') {
+        const u = 1 - Math.pow(1 - p, 2);
+        const cx = f.sx + (f.tx - f.sx) * u;
+        const cy = f.sy + (f.ty - f.sy) * u - Math.sin(u * Math.PI) * 90;
+        const sc = 1 - u * .45;
+        f.node.setAttribute('transform', `translate(${cx.toFixed(1)} ${cy.toFixed(1)}) scale(${sc.toFixed(2)})`);
+        f.node.setAttribute('opacity', String(1 - u * .2));
+      } else {
+        f.vy += f.g * dt;
+        f.x += f.vx * dt;
+        f.y += f.vy * dt;
+        f.node.setAttribute('cx', f.x.toFixed(1));
+        f.node.setAttribute('cy', f.y.toFixed(1));
+        f.node.setAttribute('opacity', (1 - p).toFixed(2));
+      }
+      if (f.t >= f.dur) {
+        f.node.remove();
+        fxList.splice(i, 1);
+      }
+    }
+    if (g) renderIdleGuide(g, now);
+  }
+  /* Procedural WebAudio woodland score & tactile phonics Foley, plus music ducking and portrait suspension. */
+  const AC = window.AudioContext || window.webkitAudioContext;
+  let audio = null, muted = !setting('sound'), voiceOn = false, bus = null, noiseBuf = null, curLevel = 0;
+
+  const soundWanted = () => !muted && !(typeof isPortraitView === 'function' && isPortraitView());
+  const musicLevel = () => soundWanted() ? (voiceOn ? .035 : .14) : 0;
+
+  function makeAudio() {
+    if (audio || !AC) return;
+    try {
+      audio = new AC();
+      const comp = audio.createDynamicsCompressor();
+      comp.threshold.value = -16; comp.knee.value = 18; comp.ratio.value = 3;
+      const music = audio.createGain();
+      music.gain.value = musicLevel();
+      const sfx = audio.createGain(); sfx.gain.value = soundWanted() ? .9 : 0;
+      const vGain = audio.createGain(); vGain.gain.value = 1;
+      music.connect(comp); sfx.connect(comp); vGain.connect(comp); comp.connect(audio.destination);
+      bus = { comp, music, sfx, voice: vGain };
+
+      const sr = audio.sampleRate, nb = audio.createBuffer(1, sr * 2, sr), nd = nb.getChannelData(0);
+      for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
+      noiseBuf = nb;
+    } catch (e) { audio = null; }
+  }
+
+  function refreshAudioGains() {
+    if (!audio || !bus) return;
+    const t = audio.currentTime;
+    bus.music.gain.setTargetAtTime(musicLevel(), t, .15);
+    bus.sfx.gain.setTargetAtTime(soundWanted() ? .9 : 0, t, .08);
+  }
+
+  function unlockAudio() {
+    makeAudio();
+    if (audio && audio.state === 'suspended') audio.resume().catch(() => {});
+    refreshAudioGains();
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && typeof voice !== 'undefined') voice.suspend();
+    refreshAudioGains();
+  });
+
+  const midi = n => 440 * Math.pow(2, (n - 69) / 12);
+
+  function envNote(t, f, dur, vol, type, dest, glideF) {
+    if (!audio || !bus || !soundWanted()) return;
+    const o = audio.createOscillator(), g = audio.createGain();
+    o.type = type || 'triangle';
+    o.frequency.setValueAtTime(f, t);
+    if (glideF) o.frequency.exponentialRampToValueAtTime(glideF, t + dur * .75);
+    g.gain.setValueAtTime(.0001, t);
+    g.gain.linearRampToValueAtTime(vol, t + Math.min(.025, dur * .2));
+    g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    o.connect(g); g.connect(dest || bus.sfx);
+    o.start(t); o.stop(t + dur + .03);
+  }
+
+  function rustleBurst(t, dur, freq, q, vol) {
+    if (!audio || !noiseBuf || !bus || !soundWanted()) return;
+    const s = audio.createBufferSource(); s.buffer = noiseBuf; s.loop = true;
+    const bp = audio.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = freq; bp.Q.value = q;
+    const g = audio.createGain();
+    g.gain.setValueAtTime(.0001, t); g.gain.linearRampToValueAtTime(vol, t + .03);
+    g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    s.connect(bp); bp.connect(g); g.connect(bus.sfx);
+    s.start(t); s.stop(t + dur + .04);
+  }
+
+  function uxSfx(kind) {
+    unlockAudio();
+    if (!audio || !soundWanted()) return;
+    const t = audio.currentTime;
+    if (kind === 'tap') {
+      envNote(t, midi(76), .09, .14, 'sine');
+    } else if (kind === 'rustle') {
+      rustleBurst(t, .22, 1800, 1.4, .16);
+      envNote(t + .04, midi(79), .12, .12, 'triangle', null, midi(84));
+    } else if (kind === 'splash') {
+      rustleBurst(t, .25, 950, 1.1, .18);
+      envNote(t, midi(64), .16, .16, 'sine', null, midi(76));
+    } else if (kind === 'clue' || kind === 'orb') {
+      [72, 76, 79, 84].forEach((m, i) => envNote(t + i * .06, midi(m), .26, .14, 'triangle'));
+    } else if (kind === 'stone_ok') {
+      envNote(t, midi(72), .16, .18, 'triangle');
+      envNote(t + .07, midi(79), .22, .16, 'sine');
+    } else if (kind === 'blend') {
+      [67, 72, 76, 79, 84, 88].forEach((m, i) => envNote(t + i * .055, midi(m), .32, .15, 'triangle'));
+    } else if (kind === 'wrong') {
+      envNote(t, midi(62), .14, .12, 'triangle', null, midi(58));
+    } else if (kind === 'star' || kind === 'unlock') {
+      [72, 76, 79, 84, 88].forEach((m, i) => envNote(t + i * .06, midi(m), .36, .16, 'sine'));
+    } else if (kind === 'cheer') {
+      [74, 78, 81, 86].forEach((m, i) => envNote(t + i * .05, midi(m), .28, .15, 'triangle'));
+    } else if (kind === 'page') {
+      rustleBurst(t, .14, 1400, 1.2, .08);
+      envNote(t, midi(72), .11, .09, 'sine');
+    }
+  }
+
+  /* 8 bright, gentle acoustic woodland scores (marimba + warm pluck bass + soft flute motif) */
+  const THEMES = [
+    { key: 60, tempo: .42, arp: [0, 4, 7, 12, 7, 4], bass: [0, 7, 5, 7], mel: [12, 16, 19, 16, 14, 12, 9, 12] },
+    { key: 62, tempo: .46, arp: [0, 4, 7, 11, 7, 4], bass: [0, 7, 2, 7], mel: [16, 14, 12, 14, 19, 16, 14, 12] },
+    { key: 65, tempo: .40, arp: [0, 4, 7, 12, 9, 7], bass: [0, 5, 7, 5], mel: [12, 14, 16, 19, 21, 19, 16, 14] },
+    { key: 67, tempo: .44, arp: [0, 4, 7, 14, 12, 7], bass: [0, 7, 9, 5], mel: [19, 16, 14, 12, 14, 16, 12, 9] },
+    { key: 64, tempo: .48, arp: [0, 3, 7, 12, 7, 3], bass: [0, 5, 3, 7], mel: [12, 15, 19, 17, 15, 12, 10, 12] },
+    { key: 69, tempo: .45, arp: [0, 4, 7, 12, 11, 7], bass: [0, 7, 5, 4], mel: [16, 19, 21, 19, 16, 14, 12, 16] },
+    { key: 60, tempo: .43, arp: [0, 7, 12, 16, 12, 7], bass: [0, 5, 9, 7], mel: [14, 16, 19, 24, 21, 19, 16, 14] },
+    { key: 65, tempo: .39, arp: [0, 4, 7, 12, 16, 12], bass: [0, 7, 5, 7], mel: [12, 16, 19, 24, 19, 16, 14, 12] },
+  ];
+
+  let nextBeat = 0, stepN = 0;
+  function audioTick() {
+    if (!audio || !bus || !soundWanted()) return;
+    if (audio.state !== 'running') return;
+    const now = audio.currentTime;
+    if (nextBeat < now - .5) nextBeat = now + .05;
+    const th = THEMES[curLevel % THEMES.length];
+    while (nextBeat < now + .22) {
+      const m = th.key + th.arp[stepN % th.arp.length];
+      envNote(nextBeat, midi(m), th.tempo * 1.4, .055, 'triangle', bus.music);
+      if (stepN % 3 === 0) {
+        const b = th.key - 12 + th.bass[(stepN / 3) % th.bass.length | 0];
+        envNote(nextBeat, midi(b), th.tempo * 2.4, .06, 'sine', bus.music);
+      }
+      if (stepN % 2 === 0) {
+        const fm = th.key + 12 + th.mel[((stepN / 2) | 0) % th.mel.length];
+        envNote(nextBeat, midi(fm), th.tempo * 1.8, .035, 'sine', bus.music);
+      }
+      stepN++;
+      nextBeat += th.tempo;
+    }
+  }
+
+  function audioOnEvents(events, g) {
+    for (const e of events || []) {
+      if (e.type === 'load') { curLevel = e.index || 0; stepN = 0; }
+      else if (e.type === 'clue') uxSfx(game.level().bg === 'bg_pond' ? 'splash' : 'clue');
+      else if (e.type === 'memory' || e.type === 'acorn') uxSfx('star');
+      else if (e.type === 'stone_ok') uxSfx('stone_ok');
+      else if (e.type === 'word_blended') uxSfx('blend');
+      else if (e.type === 'stone_try') uxSfx('wrong');
+      else if (e.type === 'cheer') uxSfx('cheer');
+    }
+  }
+  /* Spoken bilingual guidance, subtitle bubbles (only when setting('subtitles') is on), and word exposure logging. */
+  const TK = (() => {
+    const isDev = () => { try { return /[?&]dev=1(&|$)/.test(location.search); } catch (e) { return false; } };
+    const subtitlesOn = () => { try { return !!setting('subtitles'); } catch (e) { return false; } };
+    const hasLine = key => !!(typeof LINES === 'object' && LINES && LINES.lines && LINES.lines[key]);
+    let curSub = null, introDone = -1;
+
+    function countWordHeard(id) {
+      try { if (typeof noteWordHeard === 'function') noteWordHeard(id); } catch (e) {}
+    }
+    function wordStats() {
+      const out = {};
+      for (const id of Object.keys(heardLog)) out[id] = Object.assign({}, heardLog[id]);
+      return out;
+    }
+
+    function hideBubble() {
+      const t = $('talk');
+      if (t) t.textContent = '';
+    }
+
+    function renderBubble(sub) {
+      const t = $('talk');
+      if (!t) return;
+      t.textContent = '';
+      if (!sub || !subtitlesOn() || !sub.segments || !sub.segments.length) return;
+      const text = sub.segments.map(s => s.text).join(' ');
+      const lines = wrap(text, 22).slice(0, 3);
+      const w = Math.min(720, Math.max(220, Math.max(...lines.map(l => l.length)) * 20 + 44));
+      const h = lines.length * 26 + 22;
+      const g = el('g', { transform: `translate(${480 - w / 2} 446)` }, t);
+      el('rect', { width: w, height: h, rx: 16, fill: '#112219', opacity: '.88', stroke: sub.who === 'labrador' ? '#7bb6ff' : '#ff9cc4', 'stroke-width': 2.5 }, g);
+      lines.forEach((ln, i) => {
+        const tx = el('text', { x: w / 2, y: 27 + i * 26, 'text-anchor': 'middle', 'font-size': 18, fill: '#fff8ea' }, g);
+        tx.textContent = ln;
+      });
+    }
+
+    if (typeof voice !== 'undefined' && typeof voice.onSubtitle === 'function') {
+      voice.onSubtitle(sub => { curSub = sub; renderBubble(sub); });
+    }
+
+    function refreshSubtitles() { renderBubble(curSub); }
+
+    function say(key, opts) {
+      if (!hasLine(key)) return Promise.resolve(false);
+      return voice.line(key, opts);
+    }
+
+    function talkOnEvents(events, g) {
+      g = g || game;
+      for (const e of events || []) {
+        if (e.type === 'load') {
+          introDone = -1;
+          hideBubble();
+          if (isDev()) window.__wordStats = wordStats;
+        } else if (e.type === 'clue' && e.word) {
+          voice.word(e.word);
+          say('spot_' + e.word, { tag: 'spot', maxWait: 4500 });
+        } else if (e.type === 'memory') {
+          if (typeof openMemoryOverlay === 'function') openMemoryOverlay(e.memoryId);
+        } else if (e.type === 'acorn') {
+          say('clue_' + (1 + (e.got % 4)), { tag: 'clue', maxWait: 3000 });
+        } else if (e.type === 'workshop_ready') {
+          say('screen2_' + g.level().mode, { tag: 'ws', maxWait: 5000 });
+        } else if (e.type === 'screen2') {
+          if (!save.flags.tutorial) {
+            save.flags.tutorial = true; saveSoon();
+            say('tutor_phonics', { tag: 'tutor', maxWait: 5000 });
+          } else {
+            say('screen2_' + g.level().mode, { tag: 'ws', maxWait: 5000 });
+          }
+        } else if (e.type === 'word_blended') {
+          voice.word(e.word);
+          say('blend_' + e.word, { tag: 'blend', maxWait: 5000 });
+        } else if (e.type === 'stone_assist') {
+          say('stone_assist', { interrupt: true, tag: 'assist', maxWait: 4000 });
+        } else if (e.type === 'stone_try') {
+          say('stone_try_' + (1 + ((e.misses || 1) % 3)), { interrupt: true, tag: 'try', maxWait: 2500 });
+        } else if (e.type === 'cheer') {
+          say('cheer_' + (1 + Math.floor(Math.random() * 4)), { interrupt: true, tag: 'cheer', maxWait: 2000 });
+        } else if (e.type === 'hint_auto') {
+          say('idle_' + (1 + Math.floor(Math.random() * 4)), { tag: 'hint', maxWait: 3500 });
+        }
+      }
+      if (g.state === 'play' && introDone !== g.index && !storyIsOpen()) {
+        introDone = g.index;
+        say('case_' + g.level().id, { tag: 'case', maxWait: 5000 });
+        if (g.index === 0 && !save.flags.tapTip) {
+          save.flags.tapTip = true; saveSoon();
+          say('tutor_tap', { tag: 'tutor', maxWait: 5000 });
+        }
+      }
+    }
+
+    return { countWordHeard, talkOnEvents, refreshSubtitles, wordStats, say, hasLine };
+  })();
+
+  const countWordHeard = TK.countWordHeard;
+  const talkOnEvents = TK.talkOnEvents;
+  const wordStats = TK.wordStats;
+  /* Storybooks, Chapter Card (跟我说 ripple), Recall, Clear Quiz, Memory Postcard, and Grand Finale Keepsake Album. */
+  let story = null;
+  let storyDraws = 0;
+  const storyIsOpen = () => !!story;
+  const uxHooks = { replay: /** @type {(i: number) => void} */ (() => {}), back: () => {} };
+
+  const UX_STAR_D = 'M0 -.8L.22 -.25L.8 -.22L.35 .15L.5 .72L0 .4L-.5 .72L-.35 .15L-.8 -.22L-.22 -.25Z';
+
+  function uxLevel(v) { return typeof v === 'number' ? LEVELS[v] : v; }
+  function uxLevelIndex(lv) { return LEVELS.indexOf(lv); }
+  function uxRoomWords(lv) { return (lv && lv.words ? lv.words : []).map(id => WORDS.find(w => w.id === id)).filter(Boolean); }
+  function uxWordList(ids) { return (ids || []).map(id => typeof id === 'string' ? WORDS.find(w => w.id === id) : id).filter(Boolean); }
+
+  function uxKey(prefix, id) { return prefix + '_' + id; }
+  function uxLine(key, opts) { return hasLineKey(key) ? voice.line(key, opts) : Promise.resolve(false); }
+  function uxLineArt(key, fallback) { const L = lineOf(key); return (L && L.art) || fallback; }
+  function uxPreload(keys) { if (typeof voice !== 'undefined' && voice.preload) voice.preload(keys); }
+  function uxStopVoice() { if (typeof voice !== 'undefined' && voice.stop) voice.stop(); }
+  function uxWordVoice(id) { if (typeof voice !== 'undefined' && voice.word) voice.word(id); }
+  function uxWait(ms) { return new Promise(ok => setTimeout(ok, ms)); }
+  function uxSaveNow() { saveWrite(); }
+  function uxNoteReviewed(id) { noteReviewed(save.words, id, reviewContext(save)); saveWrite(); }
+
+  function uxScreen(name) {
+    story = { name, seq: 0, onKey: null };
+    return story;
+  }
+  const uxAlive = s => story === s;
+  function uxEnd(s, done) {
+    if (story !== s) return;
+    story = null;
+    $('overlay').textContent = '';
+    uxStopVoice();
+    if (typeof done === 'function') done();
+  }
+
+  function uxPaint(html) {
+    const root = $('overlay');
+    root.innerHTML = html;
+    return root;
+  }
+
+  function uxPic(name, x, y, w, h, fallback) {
+    if (SIZES[name]) return `<image href="${SRC(name)}" x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="xMidYMid slice"/>`;
+    return fallback || '';
+  }
+
+  function uxIcon(kind, r, col) {
+    const s = r || 20, c = col || '#fff7e6';
+    if (kind === 'next') return `<path d="M${-s * .35} ${-s * .4}L${s * .4} 0L${-s * .35} ${s * .4}Z" fill="${c}"/>`;
+    if (kind === 'back') return `<path d="M${s * .35} ${-s * .4}L${-s * .4} 0L${s * .35} ${s * .4}Z" fill="${c}"/>`;
+    if (kind === 'home') return `<path d="M0 ${-s * .55}L${s * .58} ${-s * .05}V${s * .55}H${s * .18}V${s * .12}H${-s * .18}V${s * .55}H${-s * .58}V${-s * .05}Z" fill="none" stroke="${c}" stroke-width="3" stroke-linejoin="round"/>`;
+    if (kind === 'replay') return `<path d="M${s * .45} ${-s * .15}A${s * .48} ${s * .48} 0 1 0 ${s * .35} ${s * .32}" fill="none" stroke="${c}" stroke-width="3.4" stroke-linecap="round"/><path d="M${s * .25} ${-s * .35}L${s * .52} ${-s * .08}L${s * .18} ${s * .04}Z" fill="${c}"/>`;
+    if (kind === 'play') return `<path d="M${-s * .28} ${-s * .45}L${s * .52} 0L${-s * .28} ${s * .45}Z" fill="${c}"/>`;
+    if (kind === 'book') return `<rect x="${-s * .55}" y="${-s * .45}" width="${s * 1.1}" height="${s * .9}" rx="4" fill="none" stroke="${c}" stroke-width="2.6"/><line x1="0" y1="${-s * .45}" x2="0" y2="${s * .45}" stroke="${c}" stroke-width="2.2"/>`;
+    if (kind === 'sticker') return `<path d="${UX_STAR_D}" transform="scale(${s * .68})" fill="${c}"/>`;
+    if (kind === 'wardrobe') return `<path d="M0 ${-s * .5}L${s * .45} ${-s * .1}L${s * .3} ${s * .55}H${-s * .3}L${-s * .45} ${-s * .1}Z" fill="none" stroke="${c}" stroke-width="2.6" stroke-linejoin="round"/>`;
+    if (kind === 'rooms') return `<rect x="${-s * .5}" y="${-s * .5}" width="${s * .42}" height="${s * .42}" rx="4" fill="${c}"/><rect x="${s * .08}" y="${-s * .5}" width="${s * .42}" height="${s * .42}" rx="4" fill="${c}"/><rect x="${-s * .5}" y="${s * .08}" width="${s * .42}" height="${s * .42}" rx="4" fill="${c}"/><rect x="${s * .08}" y="${s * .08}" width="${s * .42}" height="${s * .42}" rx="4" fill="${c}"/>`;
+    if (kind === 'gear') return `<circle r="${s * .42}" fill="none" stroke="${c}" stroke-width="3.2" stroke-dasharray="5 3"/><circle r="${s * .16}" fill="${c}"/>`;
+    return `<circle r="${s * .35}" fill="${c}"/>`;
+  }
+
+  function uxButton(o) {
+    const r = Math.max(32, o.r || 36);
+    const hitR = layoutHitRadius(r, !!o.ring);
+    const fill = o.plate === 'gold' ? 'url(#goldGrad)' : 'url(#plateGrad)';
+    const stroke = o.plate === 'gold' ? '#fff7dc' : '#80a875';
+    const icCol = o.plate === 'gold' ? '#4a2605' : '#1b3824';
+    const cls = 'ux-btn' + (o.cls ? ' ' + o.cls : '');
+    const pic = o.pic ? uxPic(o.pic, -r * .78, -r * .78, r * 1.56, r * 1.56) : uxIcon(o.icon || o.ui, r * .65, icCol);
+    return `<g class="${cls}" data-act="${o.act}" data-ui="${o.ui || o.act}" role="button" tabindex="0" aria-label="${o.ui || o.act}" transform="translate(${o.x} ${o.y})">
+      <circle r="${hitR}" fill="transparent"/><g class="btn-vis" filter="url(#softShadow)">
+      <circle r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="3.5"/>${pic}</g></g>`;
+  }
+
+  function uxNudge(node) {
+    if (!node) return;
+    node.classList.remove('ux-shake');
+    void node.getBoundingClientRect();
+    node.classList.add('ux-shake');
+  }
+
+  function uxPopSlot(root, k) {
+    const n = root.querySelector(`[data-pop="${k}"]`);
+    if (n) n.classList.add('on');
+  }
+
+  function uxBind(root, handlers) {
+    if (!root) return;
+    root.querySelectorAll('[data-act]').forEach(btn => {
+      const act = btn.getAttribute('data-act'), ui = btn.getAttribute('data-ui');
+      btn.addEventListener('pointerenter', () => { if (ui && typeof voice !== 'undefined') voice.ui(ui); });
+      btn.addEventListener('focus', () => { if (ui && typeof voice !== 'undefined') voice.ui(ui); });
+      btn.addEventListener('click', () => { if (handlers[act]) handlers[act](btn); });
+      btn.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (handlers[act]) handlers[act](btn); } });
+    });
+    if (handlers.word) {
+      root.querySelectorAll('[data-word]').forEach(card => {
+        const go = () => handlers.word(card);
+        card.addEventListener('click', go);
+        card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+      });
+    }
+  }
+
+  function uxCardRow(words, y, cw, ch, gap) {
+    const n = words.length, x0 = 480 - (n * cw + (n - 1) * gap) / 2;
+    return words.map((w, i) => {
+      const x = x0 + i * (cw + gap), pad = Math.round(cw * .12);
+      const imgH = ch - 56;
+      return `<g class="ux-pop" data-pop="${i}"><g class="ux-btn" data-word="${w.id}" role="button" tabindex="0" aria-label="${w.en}" transform="translate(${x} ${y})">
+        <g class="btn-vis" filter="url(#softShadow)">
+        <rect width="${cw}" height="${ch}" rx="22" fill="#fffaf0" stroke="#e4b457" stroke-width="3.5"/>
+        ${uxPic(w.icon || 'word_' + w.id, pad, 14, cw - pad * 2, imgH)}
+        <text class="latin" x="${cw / 2}" y="${ch - 14}" text-anchor="middle" font-size="${cw > 180 ? 32 : 26}" fill="#2b1f09">${w.en}</text>
+      </g></g></g>`;
+    }).join('');
+  }
+
+  /* ---------- story sequence (prologue / finale story) ---------- */
+  function showStory(keys, done) {
+    const s = uxScreen('story');
+    storyDraws++;
+    uxPreload(keys);
+    let idx = 0;
+    const render = () => {
+      if (!uxAlive(s)) return;
+      const key = keys[idx], art = uxLineArt(key, 'story_open');
+      const root = uxPaint(`<g class="page">
+        <image href="${SRC(art)}" width="960" height="520" preserveAspectRatio="xMidYMid slice"/>
+        <rect width="960" height="520" fill="url(#bottomFade)" opacity=".45" pointer-events="none"/>
+        <g transform="translate(480 492)">${keys.map((_, k) => `<circle cx="${(k - (keys.length - 1) / 2) * 20}" cy="0" r="${k === idx ? 6 : 4.5}" fill="${k === idx ? '#ffd27a' : '#b7d4c0'}"/>`).join('')}</g>
+        ${uxButton({ act: 'next', ui: 'next', icon: 'next', x: 886, y: 452, r: 38, plate: 'gold' })}
+      </g>`);
+      const next = () => {
+        if (!uxAlive(s)) return;
+        uxStopVoice();
+        if (++idx < keys.length) render();
+        else uxEnd(s, done);
+      };
+      s.onKey = next;
+      uxBind(root, { next });
+      uxLine(key).then(() => {
+        if (!uxAlive(s)) return;
+        const b = root.querySelector('[data-act="next"]');
+        if (b) b.classList.add('ux-pulse');
+      });
+    };
+    render();
+  }
+
+  /* ---------- chapter card with "跟我说" sound-wave ripple & confetti ---------- */
+  function showChapter(level, done) {
+    const lv = uxLevel(level), words = uxRoomWords(lv), s = uxScreen('chapter');
+    uxPreload([uxKey('ch', lv.id), ...words.map(w => uxKey('learn', w.id))]);
+    const n = words.length, cw = 216, ch = 250, gap = 28, x0 = 480 - (n * cw + (n - 1) * gap) / 2;
+    const root = uxPaint(`<g class="page">
+      <image href="${SRC(uxLineArt('ch_' + lv.id, lv.bg))}" width="960" height="520" preserveAspectRatio="xMidYMid slice"/>
+      <rect width="960" height="520" fill="#112219" opacity=".52"/>
+      ${uxCardRow(words, 118, cw, ch, gap)}
+      <g id="uxCue" opacity="0" transform="translate(480 68)" pointer-events="none">
+        <circle class="ux-ripple" r="24" fill="none" stroke="#ffd27a" stroke-width="4"/>
+        <circle r="22" fill="#ffd27a" opacity=".25"/>
+      </g>
+      ${uxButton({ act: 'go', ui: 'next', icon: 'next', x: 886, y: 452, r: 38, plate: 'gold' })}
+    </g>`);
+    const finish = () => uxEnd(s, done);
+    s.onKey = finish;
+    uxBind(root, { go: finish, word: el => { uxNudge(el); uxWordVoice(el.dataset.word); } });
+    const cue = root.querySelector('#uxCue');
+    const setCue = k => {
+      if (k == null) { cue.setAttribute('opacity', '0'); return; }
+      cue.setAttribute('transform', `translate(${x0 + k * (cw + gap) + cw / 2} 92)`);
+      cue.setAttribute('opacity', '1');
+    };
+    (async () => {
+      await uxLine('ch_' + lv.id);
+      for (let k = 0; k < n; k++) {
+        if (!uxAlive(s)) return;
+        uxPopSlot(root, k); uxSfx('page'); setCue(k);
+        await uxLine('learn_' + words[k].id);
+        if (!uxAlive(s)) return;
+        await uxWait(1200);
+        if (!uxAlive(s)) return;
+        uxSfx('star');
+        uxConfetti(root.querySelector('.page'), x0 + k * (cw + gap) + cw / 2, 110, 10);
+        setCue(null);
+        await uxWait(220);
+      }
+      if (!uxAlive(s)) return;
+      const b = root.querySelector('[data-act="go"]');
+      if (b) b.classList.add('ux-pulse');
+    })();
+  }
+
+  /* ---------- spaced recall before entering the next room ---------- */
+  function showRecall(prevLevel, done, ids) {
+    const lv = prevLevel == null ? null : uxLevel(prevLevel), own = lv ? lv.words || [] : [];
+    const words = uxWordList(Array.isArray(ids) ? ids : own);
+    if (!lv || !words.length) { if (done) done(); return; }
+    const s = uxScreen('recall');
+    const older = recallOlderIds(own, words.map(w => w.id));
+    uxPreload(words.map(w => uxKey('recall', w.id)));
+    const wide = words.length > 3;
+    const root = uxPaint(`<g class="page">
+      <image href="${SRC(lv.bg)}" width="960" height="520" preserveAspectRatio="xMidYMid slice"/>
+      <rect width="960" height="520" fill="#112219" opacity=".54"/>
+      ${wide ? uxCardRow(words, 145, 160, 196, 16) : uxCardRow(words, 130, 210, 240, 28)}
+      ${uxButton({ act: 'skip', ui: 'next', icon: 'next', x: 886, y: 452, r: 36, plate: 'gold' })}
+    </g>`);
+    const finish = () => uxEnd(s, done);
+    s.onKey = finish;
+    uxBind(root, { skip: finish, word: el => { uxNudge(el); uxWordVoice(el.dataset.word); } });
+    (async () => {
+      for (let k = 0; k < words.length; k++) {
+        if (!uxAlive(s)) return;
+        uxPopSlot(root, k); uxSfx('page');
+        await uxLine('recall_' + words[k].id);
+        if (!uxAlive(s)) return;
+        if (older.includes(words[k].id)) uxNoteReviewed(words[k].id);
+        await uxWait(180);
+      }
+      await uxWait(450);
+      finish();
+    })();
+  }
+
+  /* ---------- memory postcard popup ---------- */
+  function showMemory(level, id, done) {
+    const lv = uxLevel(level), s = uxScreen('memory');
+    const root = uxPaint(`<g class="page">
+      <rect width="960" height="520" fill="#112219" opacity=".72"/>
+      <g transform="translate(480 240)" filter="url(#softShadow)">
+        <rect x="-250" y="-155" width="500" height="310" rx="28" fill="#fffaf0" stroke="#ffd27a" stroke-width="5"/>
+        ${uxPic(uxLineArt('mem_' + id, lv.bg), -230, -135, 460, 250)}
+        ${uxPic('prop_postcard', 165, -130, 68, 68)}
+      </g>
+      ${uxButton({ act: 'ok', ui: 'next', icon: 'next', x: 480, y: 446, r: 38, plate: 'gold', cls: 'ux-pulse' })}
+    </g>`);
+    const ok = () => uxEnd(s, done);
+    s.onKey = ok;
+    uxBind(root, { ok });
+    uxSfx('star');
+    uxConfetti(root.querySelector('.page'), 480, 200, 20);
+    uxLine('mem_' + id);
+  }
+
+  /* ---------- clear page: 3 stars -> word cards -> listening quiz ---------- */
+  function showClear(level, done) {
+    const lv = uxLevel(level), idx = uxLevelIndex(lv), words = uxRoomWords(lv), s = uxScreen('clear');
+    const memory = !!game.memoryFound, acorns = !game.acorns || game.acorns.total === 0 ? true : game.acorns.got >= game.acorns.total;
+    const got = [true, memory, acorns];
+    s.seq = 0;
+
+    const starsHtml = got.map((g, k) => `<g transform="translate(${(k - 1) * 140} 0)"><g class="ux-pop" data-pop="s${k}">
+      ${g ? '<circle r="60" fill="#fff2b5" opacity=".32"/>' : ''}
+      <path d="${UX_STAR_D}" transform="scale(56)" fill="${g ? 'url(#goldGrad)' : '#1d3627'}" stroke="${g ? '#fff5cf' : '#588267'}" stroke-width=".06" opacity="${g ? 1 : .85}"/>
+    </g></g>`).join('');
+
+    uxPaint(`<g class="page">
+      <image href="${SRC(lv.bg)}" width="960" height="520" preserveAspectRatio="xMidYMid slice"/>
+      <rect width="960" height="520" fill="#112219" opacity=".58"/>
+      <g id="uxStars" transform="translate(480 155)">${starsHtml}</g>
+      <g id="uxBody"></g><g id="uxCtl"></g>
+    </g>`);
+    const root = $('overlay'), body = root.querySelector('#uxBody'), ctl = root.querySelector('#uxCtl');
+    const mark = () => { const me = ++s.seq; return () => uxAlive(s) && s.seq === me; };
+    const setCtl = html => { ctl.innerHTML = html; uxBind(ctl, { next: () => s.onKey && s.onKey(), replay: () => { if (uxAlive(s)) { uxEnd(s, null); uxHooks.replay(idx); } }, done: () => uxEnd(s, done) }); };
+    const nextBtn = () => uxButton({ act: 'next', ui: 'next', icon: 'next', x: 886, y: 452, r: 38, plate: 'gold' });
+
+    const phaseStars = () => {
+      const ok = mark();
+      s.onKey = () => { if (ok()) phaseQuiz(); };
+      setCtl(nextBtn());
+      (async () => {
+        const ln = uxLine('clear_' + lv.id);
+        for (let k = 0; k < 3; k++) {
+          await uxWait(k ? 550 : 280);
+          if (!ok()) return;
+          uxPopSlot(root, 's' + k);
+          if (got[k]) { uxSfx('star'); uxConfetti(root.querySelector('.page'), 480 + (k - 1) * 140, 155, 12); }
+        }
+        await ln;
+        await uxWait(650);
+        if (ok()) phaseQuiz();
+      })();
+    };
+
+    const phaseQuiz = () => {
+      const ok = mark();
+      const target = words[Math.floor(Math.random() * words.length)] || words[0];
+      const otherLearned = Object.keys(save.words || {}).filter(id => !words.some(w => w.id === id));
+      const optIds = quizOptions(target.id, words.map(w => w.id), otherLearned, save.words, makeReviewRng(idx * 31 + 7));
+      const opts = uxWordList(optIds);
+      root.querySelector('#uxStars').setAttribute('transform', 'translate(480 86) scale(.55)');
+      body.innerHTML = `<g transform="translate(0 40)">${uxCardRow(opts, 148, 210, 236, 26)}</g>`;
+      opts.forEach((_, k) => uxPopSlot(root, k));
+      setCtl(uxButton({ act: 'done', ui: 'quiz_skip', icon: 'next', x: 886, y: 452, r: 34 }));
+      let tried = false, locked = false;
+      uxLine('quiz_' + target.id);
+      root.querySelectorAll('[data-word]').forEach(card => {
+        const pick = () => {
+          if (!ok() || locked) return;
+          const id = card.getAttribute('data-word');
+          if (id === target.id) {
+            locked = true;
+            noteQuizAnswer(save.words, target.id, !tried, reviewContext(save));
+            saveWrite();
+            uxSfx('star');
+            uxConfetti(root.querySelector('.page'), 480, 260, 24);
+            uxLine('quiz_right_' + (1 + Math.floor(Math.random() * 3))).then(() => {
+              if (!ok()) return;
+              body.innerHTML = '';
+              setCtl(uxButton({ act: 'done', ui: 'next', icon: 'next', x: 585, y: 315, r: 52, plate: 'gold', cls: 'ux-pulse' }) + uxButton({ act: 'replay', ui: 'replay', icon: 'replay', x: 375, y: 315, r: 42 }));
+            });
+          } else {
+            tried = true;
+            uxSfx('wrong');
+            uxNudge(card);
+            uxLine('quiz_wrong_' + (1 + Math.floor(Math.random() * 3)));
+          }
+        };
+        card.addEventListener('click', pick);
+        card.addEventListener('keydown', /** @param {KeyboardEvent} e */ e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
+      });
+    };
+
+    phaseStars();
+  }
+
+  /* ---------- grand finale keepsake album: falling leaves/petals, dressed-up hero pups & 3 visual achievement badges ---------- */
+  function showFinale(done) {
+    const s = uxScreen('finale');
+    const finish = () => uxEnd(s, done);
+    s.onKey = finish;
+    let totalStars = 0;
+    for (const lv of LEVELS) {
+      const r = save.rooms && save.rooms[lv.id];
+      if (r && Array.isArray(r.stars)) totalStars += r.stars.filter(Boolean).length;
+    }
+    const stickerCount = Array.isArray(save.stickers) ? save.stickers.length : 0;
+    const wordCount = Object.values(save.words || {}).filter(w => w && ((w.heard || 0) > 0 || w.seen)).length;
+    const badge = (cx, cy, iconHtml, num) => `<g transform="translate(${cx} ${cy})">
+      <rect x="-78" y="-26" width="156" height="52" rx="26" fill="#13261b" opacity=".88" stroke="#ffd27a" stroke-width="2.5"/>
+      <g transform="translate(-44 0)">${iconHtml}</g>
+      <text class="latin" x="16" y="8" text-anchor="middle" font-size="25" fill="#fff5cf">${num}</text></g>`;
+    const petals = Array.from({ length: 18 }, (_, i) => {
+      const px = 45 + ((i * 53) % 870), delay = -(i * .37).toFixed(2), col = ['#ffd97d', '#ffc2d9', '#b8eb8a', '#ffe699'][i % 4];
+      return `<g transform="translate(${px} 0)"><ellipse class="fin-petal" rx="${6 + (i % 3) * 2}" ry="${3.5 + (i % 2) * 1.5}" fill="${col}" style="animation-delay:${delay}s"/></g>`;
+    }).join('');
+    const root = uxPaint(`<g class="page">
+      <image href="${SRC('bg_woods')}" width="960" height="520" preserveAspectRatio="xMidYMid slice"/>
+      <rect width="960" height="520" fill="#112219" opacity=".36"/>
+      <g pointer-events="none">${petals}</g>
+      <rect x="210" y="38" width="540" height="316" rx="34" fill="#fffaf0" stroke="#ffd27a" stroke-width="5" filter="url(#softShadow)"/>
+      <rect x="224" y="52" width="512" height="288" rx="24" fill="#2c593e" opacity=".12" stroke="#d9c69e" stroke-width="2"/>
+      <circle cx="380" cy="196" r="95" fill="url(#rose)"/><circle cx="575" cy="198" r="95" fill="url(#warm)"/>
+      <g id="finSkye" transform="translate(380 322) scale(1.6)"></g>
+      <g id="finLab" transform="translate(575 322) scale(1.5)"></g>
+      ${badge(284, 396, uxPic('fx_star', -18, -18, 36, 36, `<path d="${UX_STAR_D}" transform="scale(18)" fill="#ffd27a"/>`), `${totalStars}/${LEVELS.length * 3}`)}
+      ${badge(480, 396, uxIcon('sticker', 20, '#ffd27a'), String(stickerCount))}
+      ${badge(676, 396, uxIcon('book', 20, '#c8f0d4'), String(wordCount))}
+      ${uxButton({ act: 'wardrobe', ui: 'wardrobe', icon: 'wardrobe', x: 356, y: 468, r: 34 })}
+      ${uxButton({ act: 'stickers', ui: 'stickers', icon: 'sticker', x: 452, y: 468, r: 34 })}
+      ${uxButton({ act: 'done', ui: 'back', icon: 'home', x: 584, y: 464, r: 42, plate: 'gold', cls: 'ux-pulse' })}
+    </g>`);
+    [['skye', '#finSkye'], ['labrador', '#finLab']].forEach(([who, sel]) => {
+      const box = root.querySelector(sel);
+      if (!box || typeof renderPupNode !== 'function') return;
+      const o = (save.outfit && save.outfit[who]) || { dress: 0, hat: null };
+      renderPupNode(box, who, 'cheer', o);
+    });
+    uxBind(root, {
+      done: finish,
+      wardrobe: () => { uxEnd(s, null); if (typeof showWardrobe === 'function') showWardrobe(false); else finish(); },
+      stickers: () => { uxEnd(s, null); if (typeof showStickers === 'function') showStickers(); else finish(); },
+    });
+    uxSfx('unlock');
+    uxConfetti(root.querySelector('.page'), 480, 180, 36);
+    uxLine('cheer_1');
+  }
+  /* Title screen, Room selector map, in-game HUD (orb count, worn hat badge, 1/2 -> 2/2 screen dots), and Parent Settings modal. */
+  const uxState = { modal: false };
+
+  function syncHud() {
+    const hud = $('hud');
+    if (!hud) return;
+    if (game.state !== 'play' || storyIsOpen()) { hud.textContent = ''; return; }
+    const oS = (save.outfit && save.outfit.skye) || { hat: null };
+    const oL = (save.outfit && save.outfit.labrador) || { hat: null };
+    const hat = game.screen === 0 ? (oL.hat || oS.hat) : (oS.hat || oL.hat);
+    const av = game.screen === 0 ? 'portrait_labrador' : 'portrait_skye';
+    const hatHtml = hat && SIZES['hat_' + hat] ? `<image id="uxAvHat" href="${SRC('hat_' + hat)}" x="27" y="4" width="36" height="24" preserveAspectRatio="xMidYMid meet"/>` : '';
+    const dots = [0, 1].map(k => `<circle cx="${38 + k * 14}" cy="84" r="${k === game.screen ? 5 : 3.5}" fill="${k === game.screen ? '#ffd27a' : '#80a875'}" stroke="#fff7e6" stroke-width="1.2"/>`).join('');
+    const countText = game.screen === 0 ? `${game.orbs.got}/${game.orbs.total}` : `${Math.min(3, (game.workshop ? game.workshop.roundIdx : 0) + 1)}/3`;
+    const counterIcon = game.screen === 0 ? 'prop_orb' : 'prop_stone';
+
+    hud.innerHTML = `<g class="hud-bar">
+      <g filter="url(#softShadow)">
+        <circle cx="45" cy="45" r="30" fill="#173021" stroke="#ffd27a" stroke-width="3"/>
+        <image href="${SRC(av)}" x="19" y="19" width="52" height="52" preserveAspectRatio="xMidYMid slice"/>
+        ${hatHtml}
+        <g id="uxScreenDots">${dots}</g>
+        <rect x="86" y="25" width="98" height="40" rx="20" fill="#173021" opacity=".88" stroke="#8cb67d" stroke-width="2.2"/>
+        <image href="${SRC(counterIcon)}" x="94" y="29" width="32" height="32" preserveAspectRatio="xMidYMid meet"/>
+        <text class="latin" x="150" y="52" text-anchor="middle" font-size="22" fill="#fff5cf">${countText}</text>
+      </g>
+      ${uxButton({ act: 'replay', ui: 'replay', icon: 'replay', x: 706, y: 45, r: 32 })}
+      ${uxButton({ act: 'home', ui: 'back', icon: 'home', x: 778, y: 45, r: 32 })}
+      ${uxButton({ act: 'hint', ui: 'hint', icon: 'sticker', x: 850, y: 45, r: 32, plate: 'gold' })}
+      ${uxButton({ act: 'fs', ui: 'fullscreen', icon: 'rooms', x: 918, y: 45, r: 32 })}
+    </g>`;
+
+    uxBind(hud, {
+      replay: () => onHudReplay(),
+      home: () => showTitle(),
+      hint: () => triggerHint(),
+      fs: () => toggleFullscreen(),
+    });
+  }
+
+  function showTitle() {
+    game.state = 'title';
+    syncHud();
+    const s = uxScreen('title');
+    const playUi = unlockedRooms() > 1 ? 'continue' : 'play';
+    const root = uxPaint(`<g class="page">
+      <image href="${SRC('key')}" width="960" height="520" preserveAspectRatio="xMidYMid slice"/>
+      <rect width="960" height="520" fill="url(#bottomFade)" opacity=".45" pointer-events="none"/>
+      <g filter="url(#softShadow)">
+        <rect x="235" y="18" width="490" height="64" rx="32" fill="#13261b" opacity=".82" stroke="#ffd27a" stroke-width="3"/>
+        <text x="480" y="61" text-anchor="middle" font-size="36" fill="#fff7df" letter-spacing="2">天天和警长的森林探案</text>
+      </g>
+      ${uxButton({ act: 'play', ui: playUi, icon: 'play', x: 480, y: 274, r: 54, plate: 'gold', cls: 'ux-pulse' })}
+      ${uxButton({ act: 'rooms', ui: 'rooms', icon: 'rooms', x: 356, y: 406, r: 38 })}
+      ${uxButton({ act: 'words', ui: 'words', icon: 'book', x: 480, y: 406, r: 38 })}
+      ${uxButton({ act: 'stickers', ui: 'stickers', icon: 'sticker', x: 604, y: 406, r: 38 })}
+      ${uxButton({ act: 'meet', ui: 'meet', pic: 'ui_meet', x: 66, y: 452, r: 38, plate: 'gold' })}
+      ${uxButton({ act: 'gear', ui: 'settings', icon: 'gear', x: 902, y: 458, r: 34 })}
+    </g>`);
+
+    const launch = () => { unlockAudio(); uxEnd(s, () => onStartJourney()); };
+    s.onKey = launch;
+    uxBind(root, {
+      play: launch,
+      rooms: () => { unlockAudio(); uxEnd(s, () => showRooms()); },
+      words: () => { unlockAudio(); uxEnd(s, () => showWords()); },
+      stickers: () => { unlockAudio(); uxEnd(s, () => showStickers()); },
+      meet: () => { unlockAudio(); uxEnd(s, () => showMeet()); },
+    });
+
+    // Parent gate: hold gear for 1.6s (or click in DEV mode)
+    const gear = root.querySelector('[data-act="gear"]');
+    if (gear) {
+      let timer = 0;
+      const down = () => {
+        unlockAudio();
+        gear.classList.add('is-hold');
+        clearTimeout(timer);
+        timer = setTimeout(() => { gear.classList.remove('is-hold'); openParentModal(); }, DEV ? 250 : 1500);
+      };
+      const up = () => { clearTimeout(timer); gear.classList.remove('is-hold'); };
+      gear.addEventListener('pointerdown', down);
+      gear.addEventListener('pointerup', up);
+      gear.addEventListener('pointerleave', up);
+      gear.addEventListener('keydown', /** @param {KeyboardEvent} e */ e => { if (e.key === 'Enter' && DEV) openParentModal(); });
+    }
+  }
+
+  function showRooms() {
+    const s = uxScreen('rooms');
+    const unlocked = unlockedRooms();
+    const cards = LEVELS.map((lv, i) => {
+      const col = i % 4, row = (i / 4) | 0;
+      const x = 68 + col * 212, y = 92 + row * 182;
+      const open = i < unlocked;
+      const rSave = save.rooms && save.rooms[lv.id];
+      const stars = (rSave && rSave.stars) || [false, false, false];
+      const starRow = stars.map((g, k) => `<path d="${UX_STAR_D}" transform="translate(${62 + k * 34} 138) scale(14)" fill="${g ? '#ffd27a' : '#264431'}" stroke="#fff5cf" stroke-width=".08"/>`).join('');
+      return `<g class="ux-btn" data-act="${open ? 'pick' : ''}" data-room="${i}" data-ui="${open ? 'room_' + lv.id : ''}" data-state="${open ? 'open' : 'lock'}" role="button" tabindex="${open ? 0 : -1}" transform="translate(${x} ${y})">
+        <g class="btn-vis" filter="url(#softShadow)">
+          <rect width="192" height="158" rx="22" fill="${open ? '#fffaf0' : '#1b3124'}" stroke="${open ? '#ffd27a' : '#4a6b56'}" stroke-width="3.5"/>
+          <image href="${SRC(lv.bg)}" x="10" y="10" width="172" height="104" preserveAspectRatio="xMidYMid slice" opacity="${open ? 1 : .28}"/>
+          <text class="latin" x="26" y="146" text-anchor="middle" font-size="22" fill="${open ? '#2b4a36' : '#73917e'}">${i + 1}</text>
+          ${starRow}
+        </g>
+      </g>`;
+    }).join('');
+    const root = uxPaint(`<g class="page">
+      <image href="${SRC('bg_woods')}" width="960" height="520" preserveAspectRatio="xMidYMid slice"/>
+      <rect width="960" height="520" fill="#112219" opacity=".62"/>
+      ${uxButton({ act: 'back', ui: 'back', icon: 'back', x: 56, y: 48, r: 34 })}
+      ${cards}
+    </g>`);
+    const back = () => uxEnd(s, () => showTitle());
+    s.onKey = back;
+    uxBind(root, { back });
+    root.querySelectorAll('[data-room]').forEach(card => {
+      const idx = Number(card.getAttribute('data-room'));
+      if (idx >= unlocked) return;
+      const go = () => uxEnd(s, () => openRoom(idx));
+      card.addEventListener('click', go);
+      card.addEventListener('keydown', /** @param {KeyboardEvent} e */ e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+    });
+  }
+
+  function openParentModal() {
+    const modal = $('modal');
+    if (!modal || uxState.modal) return;
+    uxState.modal = true;
+    const core = WORDS.filter(w => w.kind === 'core');
+    const heard = core.filter(w => (save.words[w.id] && save.words[w.id].heard > 0)).length;
+    const quizOk = core.reduce((n, w) => n + ((save.words[w.id] && save.words[w.id].quiz) || 0), 0);
+    const quizWrong = core.reduce((n, w) => n + ((save.words[w.id] && save.words[w.id].wrong) || 0), 0);
+    const acc = quizOk + quizWrong > 0 ? Math.round((quizOk * 100) / (quizOk + quizWrong)) + '%' : '100%';
+    const mins = Math.max(1, Math.round((save.totalPlaySeconds || 0) / 60));
+
+    modal.innerHTML = `<rect width="960" height="520" fill="#0d1b13" opacity=".78"/>
+      <g transform="translate(220 75)" filter="url(#softShadow)">
+        <rect width="520" height="370" rx="28" fill="#fffaf0" stroke="#ffd27a" stroke-width="4"/>
+        <text x="260" y="48" text-anchor="middle" font-size="28" fill="#1c3526">家长设置与学习统计</text>
+        <text x="48" y="96" font-size="20" fill="#2d4c39">已听掌握核心词：${heard} / ${core.length} · 测试首答率：${acc} · 累计探索：${mins} 分钟</text>
+        <g class="ux-btn" data-m="subs" transform="translate(48 130)"><rect width="424" height="52" rx="14" fill="#edf5ea" stroke="#9ac090" stroke-width="2"/><text x="24" y="33" font-size="20" fill="#1c3526">中英字幕显示：${setting('subtitles') ? '开启' : '关闭'}</text></g>
+        <g class="ux-btn" data-m="eng" transform="translate(48 196)"><rect width="424" height="52" rx="14" fill="#edf5ea" stroke="#9ac090" stroke-width="2"/><text x="24" y="33" font-size="20" fill="#1c3526">英文教学模式：${setting('english') === 'words+phrases' ? '核心词 + 短句' : '仅核心词'}</text></g>
+        <g class="ux-btn" data-m="snd" transform="translate(48 262)"><rect width="202" height="52" rx="14" fill="#edf5ea" stroke="#9ac090" stroke-width="2"/><text x="24" y="33" font-size="20" fill="#1c3526">声音：${setting('sound') ? '开启' : '静音'}</text></g>
+        <g class="ux-btn" data-m="close" transform="translate(270 262)"><rect width="202" height="52" rx="14" fill="url(#goldGrad)" stroke="#d6a44e" stroke-width="2"/><text x="101" y="33" text-anchor="middle" font-size="22" fill="#4a2605">关闭返回</text></g>
+      </g>`;
+
+    const close = () => { uxState.modal = false; modal.textContent = ''; };
+    modal.querySelectorAll('[data-m]').forEach(elBtn => {
+      elBtn.addEventListener('click', () => {
+        const m = elBtn.getAttribute('data-m');
+        if (m === 'subs') { setSetting('subtitles', !setting('subtitles')); uxState.modal = false; openParentModal(); }
+        else if (m === 'eng') { setSetting('english', setting('english') === 'words+phrases' ? 'words' : 'words+phrases'); uxState.modal = false; openParentModal(); }
+        else if (m === 'snd') { setSetting('sound', !setting('sound')); uxState.modal = false; openParentModal(); }
+        else close();
+      });
+    });
+  }
+  /* Rewards: Wordbook + Ear Listening Quiz (24 words across 2 pages), Sticker Treehouse Board, Meet & Pup Gear Locker (Wardrobe). */
+  const WARDROBE_UNLOCKS = { d1: 2, d2: 5, wreath: 8, detective: 12, crown: 16 };
+
+  function totalStarsCount() {
+    let n = 0;
+    for (const lv of LEVELS) {
+      const r = save.rooms && save.rooms[lv.id];
+      if (r && Array.isArray(r.stars)) n += r.stars.filter(Boolean).length;
+    }
+    return n;
+  }
+
+  /* ---------- Wordbook (24 core words in 2 clean pages of 12, cards >= 170x110 -> > 64 CSS px) ---------- */
+  function showWords() {
+    const core = WORDS.filter(w => w.kind === 'core');
+    let pageIdx = 0;
+    const s = uxScreen('words');
+    const render = () => {
+      if (!uxAlive(s)) return;
+      const slice = core.slice(pageIdx * 12, pageIdx * 12 + 12);
+      const cards = slice.map((w, i) => {
+        const col = i % 4, row = (i / 4) | 0;
+        const x = 94 + col * 198, y = 96 + row * 124;
+        const learned = !!(save.words[w.id] && (save.words[w.id].heard > 0 || save.words[w.id].seen));
+        return `<g class="ux-btn" data-word="${w.id}" role="button" tabindex="0" aria-label="${w.en}" transform="translate(${x} ${y})">
+          <g class="btn-vis" filter="url(#softShadow)">
+            <rect width="182" height="112" rx="18" fill="${learned ? '#fffaf0' : '#1b3124'}" stroke="${learned ? '#ffd27a' : '#4a6b56'}" stroke-width="3"/>
+            <image href="${SRC(w.icon || 'word_' + w.id)}" x="14" y="10" width="76" height="76" preserveAspectRatio="xMidYMid meet" ${learned ? '' : 'filter="url(#silhouette)" opacity=".5"'}/>
+            <text class="latin" x="132" y="64" text-anchor="middle" font-size="24" fill="${learned ? '#36260b' : '#73917e'}">${learned ? w.en : '???'}</text>
+          </g>
+        </g>`;
+      }).join('');
+      const pageDots = [0, 1].map(p => `<circle class="ux-btn" data-act="pg${p}" cx="${460 + p * 40}" cy="482" r="14" fill="${p === pageIdx ? '#ffd27a' : '#486b54'}" stroke="#fff7e6" stroke-width="2"/>`).join('');
+      const root = uxPaint(`<g class="page">
+        <image href="${SRC('bg_woods')}" width="960" height="520" preserveAspectRatio="xMidYMid slice"/>
+        <rect width="960" height="520" fill="#112219" opacity=".68"/>
+        ${uxButton({ act: 'back', ui: 'back', icon: 'back', x: 56, y: 48, r: 34 })}
+        ${pageDots}
+        ${uxButton({ act: 'pageNext', ui: 'next', icon: pageIdx === 0 ? 'next' : 'back', x: 902, y: 268, r: 34, plate: 'gold' })}
+        ${cards}
+      </g>`);
+      const back = () => uxEnd(s, () => showTitle());
+      s.onKey = back;
+      uxBind(root, {
+        back,
+        pg0: () => { pageIdx = 0; render(); },
+        pg1: () => { pageIdx = 1; render(); },
+        pageNext: () => { pageIdx = 1 - pageIdx; render(); },
+        word: card => { uxNudge(card); uxWordVoice(card.getAttribute('data-word')); },
+      });
+    };
+    render();
+  }
+
+  /* ---------- Sticker Treehouse Board (earned stickers placed with pointer or keyboard, speaks word) ---------- */
+  function showStickers() {
+    const core = WORDS.filter(w => w.kind === 'core');
+    const unlocked = new Set(save.stickers || []);
+    for (const lv of LEVELS) {
+      const r = save.rooms && save.rooms[lv.id];
+      if (!r || !Array.isArray(r.stars)) continue;
+      lv.words.forEach((wid, k) => { if (r.stars[k]) unlocked.add(wid); });
+    }
+    save.stickers = [...unlocked];
+    const s = uxScreen('stickers');
+    let selected = null;
+    const render = () => {
+      if (!uxAlive(s)) return;
+      const tray = core.filter(w => unlocked.has(w.id)).slice(0, 12);
+      const placed = (save.board || []).map((b, i) => {
+        const tilt = ((i % 5) - 2) * 5;
+        return `<g class="ux-btn" data-placed="${i}" transform="translate(${b.x} ${b.y}) rotate(${tilt})">
+          <image href="${SRC('word_' + b.id)}" x="-42" y="-42" width="84" height="84" preserveAspectRatio="xMidYMid meet" filter="url(#softShadow)"/>
+        </g>`;
+      }).join('');
+      const trayHtml = tray.map((w, i) => {
+        const x = 110 + (i % 6) * 130, y = i < 6 ? 414 : 478;
+        const on = selected === w.id;
+        return `<g class="ux-btn" data-st="${w.id}" role="button" tabindex="0" transform="translate(${x} ${y})">
+          <circle r="32" fill="${on ? '#ffd27a' : '#fffaf0'}" stroke="${on ? '#e67e22' : '#9ac090'}" stroke-width="3"/>
+          <image href="${SRC('word_' + w.id)}" x="-24" y="-24" width="48" height="48" preserveAspectRatio="xMidYMid meet"/>
+        </g>`;
+      }).join('');
+      const root = uxPaint(`<g class="page">
+        <image href="${SRC('bg_meadow')}" width="960" height="520" preserveAspectRatio="xMidYMid slice"/>
+        <rect width="960" height="520" fill="#112219" opacity=".45"/>
+        <rect id="stkBoard" x="115" y="48" width="730" height="316" rx="28" fill="#fffaf0" opacity=".88" stroke="#d6a44e" stroke-width="5" filter="url(#softShadow)"/>
+        ${placed}
+        <rect x="64" y="378" width="832" height="132" rx="24" fill="#14291d" opacity=".85" stroke="#8cb67d" stroke-width="2"/>
+        ${trayHtml}
+        ${uxButton({ act: 'back', ui: 'back', icon: 'back', x: 56, y: 48, r: 34 })}
+      </g>`);
+      const back = () => { saveWrite(); uxEnd(s, () => showTitle()); };
+      s.onKey = back;
+      uxBind(root, { back });
+      const board = root.querySelector('#stkBoard');
+      const placeAt = (wid, bx, by) => {
+        if (!save.board) save.board = [];
+        save.board = save.board.filter(item => item.id !== wid).concat([{ id: wid, x: Math.max(165, Math.min(795, bx)), y: Math.max(95, Math.min(315, by)) }]);
+        saveSoon(); uxWordVoice(wid); uxSfx('star');
+        render();
+      };
+      root.querySelectorAll('[data-st]').forEach((btn, idx) => {
+        const wid = btn.getAttribute('data-st');
+        const choose = () => {
+          selected = wid;
+          uxWordVoice(wid);
+          placeAt(wid, 220 + (idx % 6) * 104, idx < 6 ? 155 : 265);
+        };
+        btn.addEventListener('click', choose);
+        btn.addEventListener('keydown', /** @param {KeyboardEvent} e */ e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); choose(); } });
+      });
+      if (board) {
+        board.addEventListener('click', /** @param {MouseEvent} e */ e => {
+          if (!selected) return;
+          const svg = /** @type {SVGSVGElement} */ (/** @type {unknown} */ ($('stage')));
+          const pt = svg.createSVGPoint();
+          pt.x = e.clientX; pt.y = e.clientY;
+          const loc = pt.matrixTransform(svg.getScreenCTM().inverse());
+          placeAt(selected, Math.round(loc.x), Math.round(loc.y));
+        });
+      }
+    };
+    render();
+  }
+
+  /* ---------- Meet Skye & Sheriff Labrador ---------- */
+  function showMeet() {
+    const s = uxScreen('meet');
+    const root = uxPaint(`<g class="page">
+      <image href="${SRC('bg_woods')}" width="960" height="520" preserveAspectRatio="xMidYMid slice"/>
+      <rect width="960" height="520" fill="#112219" opacity=".5"/>
+      <g class="ux-btn" data-hero="skye" role="button" tabindex="0" transform="translate(310 340) scale(1.35)">
+        <circle cx="0" cy="-70" r="90" fill="url(#rose)"/>
+        <g id="meetSkye"></g>
+      </g>
+      <g class="ux-btn" data-hero="labrador" role="button" tabindex="0" transform="translate(650 340) scale(1.22)">
+        <circle cx="0" cy="-80" r="95" fill="url(#cool)"/>
+        <g id="meetLab"></g>
+      </g>
+      ${uxButton({ act: 'back', ui: 'back', icon: 'back', x: 56, y: 48, r: 34 })}
+      ${uxButton({ act: 'wardrobe', ui: 'wardrobe', icon: 'wardrobe', x: 480, y: 446, r: 42, plate: 'gold', cls: 'ux-pulse' })}
+    </g>`);
+    if (typeof renderPupNode === 'function') {
+      renderPupNode(root.querySelector('#meetSkye'), 'skye', 'idle', save.outfit.skye);
+      renderPupNode(root.querySelector('#meetLab'), 'labrador', 'idle', save.outfit.labrador);
+    }
+    const back = () => uxEnd(s, () => showTitle());
+    s.onKey = back;
+    uxBind(root, { back, wardrobe: () => uxEnd(s, () => showWardrobe(true)) });
+    root.querySelectorAll('[data-hero]').forEach(g => {
+      g.addEventListener('click', () => {
+        const who = g.getAttribute('data-hero');
+        uxNudge(g); uxLine('me_' + who, { interrupt: true });
+      });
+    });
+    uxLine('me_labrador');
+  }
+
+  /* ---------- Pup Gear Locker / Wardrobe ---------- */
+  function showWardrobe(fromMeet) {
+    const s = uxScreen('wardrobe');
+    const stars = totalStarsCount();
+    const hats = ['wreath', 'detective', 'crown'];
+    const render = () => {
+      if (!uxAlive(s)) return;
+      const oS = save.outfit.skye, oL = save.outfit.labrador;
+      const dressBtns = (who, cx) => [0, 1, 2].map((d, k) => {
+        const need = d === 0 ? 0 : (d === 1 ? WARDROBE_UNLOCKS.d1 : WARDROBE_UNLOCKS.d2);
+        const open = stars >= need, active = save.outfit[who].dress === d;
+        const cols = who === 'skye' ? ['#ff7cb8', '#5ecbff', '#a48bff'] : ['#2e4c85', '#34945e', '#c94b5b'];
+        return `<g class="ux-btn" data-who="${who}" data-kind="dress" data-val="${d}" data-state="${open ? (active ? 'on' : 'open') : 'lock'}" role="button" tabindex="${open ? 0 : -1}" transform="translate(${cx + (k - 1) * 76} 376)">
+          <g class="btn-vis" filter="url(#softShadow)">
+            <circle r="32" fill="#fffaf0" stroke="${active ? '#ffd27a' : '#8cb67d'}" stroke-width="${active ? 5 : 2.5}"/>
+            <circle r="21" fill="${cols[d]}" opacity="${open ? 1 : .28}"/>
+          </g>
+        </g>`;
+      }).join('');
+      const hatBtns = (who, cx) => [null, ...hats].map((h, k) => {
+        const need = h ? WARDROBE_UNLOCKS[h] : 0, open = stars >= need, active = save.outfit[who].hat === h;
+        const x = cx + (k - 1.5) * 68;
+        const inner = h && SIZES['hat_' + h]
+          ? `<image href="${SRC('hat_' + h)}" x="-22" y="-22" width="44" height="44" preserveAspectRatio="xMidYMid meet" opacity="${open ? 1 : .28}"/>`
+          : `<text class="latin" y="8" text-anchor="middle" font-size="24" fill="#6b7f70">✕</text>`;
+        return `<g class="ux-btn" data-who="${who}" data-kind="hat" data-val="${h || ''}" data-state="${open ? (active ? 'on' : 'open') : 'lock'}" role="button" tabindex="${open ? 0 : -1}" transform="translate(${x} 454)">
+          <g class="btn-vis" filter="url(#softShadow)">
+            <circle r="32" fill="#fffaf0" stroke="${active ? '#ffd27a' : '#8cb67d'}" stroke-width="${active ? 5 : 2.5}"/>${inner}
+          </g>
+        </g>`;
+      }).join('');
+
+      const root = uxPaint(`<g class="page">
+        <image href="${SRC('bg_woods')}" width="960" height="520" preserveAspectRatio="xMidYMid slice"/>
+        <rect width="960" height="520" fill="#112219" opacity=".6"/>
+        <rect x="115" y="70" width="320" height="252" rx="28" fill="#fbe8f1" stroke="#ffd27a" stroke-width="4" filter="url(#softShadow)"/>
+        <rect x="525" y="70" width="320" height="252" rx="28" fill="#e6efe4" stroke="#ffd27a" stroke-width="4" filter="url(#softShadow)"/>
+        <g id="wdSkye" transform="translate(275 294) scale(1.45)"></g>
+        <g id="wdLab" transform="translate(685 300) scale(1.32)"></g>
+        ${dressBtns('skye', 275)}${hatBtns('skye', 275)}
+        ${dressBtns('labrador', 685)}${hatBtns('labrador', 685)}
+        ${uxButton({ act: 'back', ui: 'back', icon: 'back', x: 56, y: 48, r: 34 })}
+      </g>`);
+
+      if (typeof renderPupNode === 'function') {
+        renderPupNode(root.querySelector('#wdSkye'), 'skye', 'cheer', oS);
+        renderPupNode(root.querySelector('#wdLab'), 'labrador', 'cheer', oL);
+      }
+
+      const back = () => { saveWrite(); uxEnd(s, () => (fromMeet ? showMeet() : showTitle())); };
+      s.onKey = back;
+      uxBind(root, { back });
+      root.querySelectorAll('[data-who]').forEach(btn => {
+        if (btn.getAttribute('data-state') === 'lock') return;
+        const pick = () => {
+          const who = btn.getAttribute('data-who'), kind = btn.getAttribute('data-kind'), val = btn.getAttribute('data-val');
+          if (kind === 'dress') save.outfit[who].dress = Number(val);
+          else save.outfit[who].hat = val || null;
+          saveWrite(); uxSfx('star'); uxLine('cheer_' + (1 + Math.floor(Math.random() * 2)));
+          render();
+        };
+        btn.addEventListener('click', pick);
+        btn.addEventListener('keydown', /** @param {KeyboardEvent} e */ e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
+      });
+    };
+    render();
+  }
+  /* Stage resizing (Retina hdFit), portrait pause check, pointer parallax, keyboard navigation & gamepad gold focus ring. */
+  const inputView = { panX: 0, targetPan: 0, fsTipAt: 0 };
+  let fitRaf = 0;
+
+  const isPortraitView = () => window.matchMedia('(orientation: portrait)').matches && window.matchMedia('(pointer: coarse)').matches;
+
+  function applyFit() {
+    fitRaf = 0;
+    const availW = window.innerWidth, availH = window.innerHeight;
+    const cssW = layoutStageWidth(availW, availH);
+    const stage = $('stage');
+    if (stage) {
+      stage.style.width = cssW + 'px';
+      stage.style.height = layoutStageHeight(cssW) + 'px';
+      hdFit(cssW);
+    }
+    if (typeof refreshAudioGains === 'function') refreshAudioGains();
+    if (isPortraitView() && typeof voice !== 'undefined') voice.suspend();
+  }
+
+  function fitStageSoon() { if (!fitRaf) fitRaf = requestAnimationFrame(applyFit); }
+  window.addEventListener('resize', fitStageSoon);
+  window.addEventListener('orientationchange', fitStageSoon);
+  applyFit();
+
+  function toggleFullscreen() {
+    const doc = document, elRoot = document.documentElement;
+    const active = doc.fullscreenElement || doc.webkitFullscreenElement;
+    if (active) {
+      if (doc.exitFullscreen) doc.exitFullscreen().catch(() => {});
+      else if (doc.webkitExitFullscreen) doc.webkitExitFullscreen();
+    } else {
+      if (elRoot.requestFullscreen) elRoot.requestFullscreen().catch(() => {});
+      else if (elRoot.webkitRequestFullscreen) elRoot.webkitRequestFullscreen();
+    }
+  }
+
+  $('stage').addEventListener('pointermove', e => {
+    const r = $('stage').getBoundingClientRect();
+    if (r.width > 0) inputView.targetPan = Math.max(-1, Math.min(1, ((e.clientX - r.left) / r.width - .5) * 2));
+  });
+
+  window.addEventListener('keydown', e => {
+    if (uxState.modal) return;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      const dir = e.key === 'ArrowRight' ? 'r' : e.key === 'ArrowLeft' ? 'l' : e.key === 'ArrowDown' ? 'd' : 'u';
+      if (movePadFocus(dir)) e.preventDefault();
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      const active = document.activeElement;
+      if (active && $('stage').contains(active) && active instanceof HTMLElement) return;
+      if (story && story.onKey) { e.preventDefault(); story.onKey(); }
+    } else if (e.key === 'Escape' && story && story.name !== 'title' && story.name !== 'finale') {
+      const back = $('overlay').querySelector('[data-act="back"]');
+      if (back) back.dispatchEvent(new MouseEvent('click'));
+    }
+  });
+
+  /* Gamepad & keyboard focus ring navigation over visible clickable stage elements */
+  let padCur = -1, padLastMove = 0, padLastA = false, padLastB = false;
+
+  function interactiveTargets() {
+    const scope = uxState.modal ? $('modal') : storyIsOpen() ? $('overlay') : $('hotspots').children.length ? $('hotspots') : $('workshop');
+    if (!scope) return [];
+    const nodes = [...scope.querySelectorAll('[role="button"]:not([data-state="lock"]), .stone-btn, .hotspot')];
+    return nodes.map(node => {
+      const b = node.getBoundingClientRect();
+      const s = $('stage').getBoundingClientRect();
+      const k = s.width > 0 ? 960 / s.width : 1;
+      return {
+        node,
+        pulse: node.classList.contains('ux-pulse'),
+        x: (b.left - s.left) * k, y: (b.top - s.top) * k,
+        w: b.width * k, h: b.height * k,
+      };
+    }).filter(r => r.w > 10 && r.h > 10);
+  }
+
+  function showPadRing(r) {
+    const pf = $('padFocus');
+    if (!pf) return;
+    if (!r) { pf.setAttribute('visibility', 'hidden'); return; }
+    const rect = pf.querySelector('rect');
+    rect.setAttribute('x', (r.x - 4).toFixed(1)); rect.setAttribute('y', (r.y - 4).toFixed(1));
+    rect.setAttribute('width', (r.w + 8).toFixed(1)); rect.setAttribute('height', (r.h + 8).toFixed(1));
+    pf.setAttribute('visibility', 'visible');
+  }
+
+  function movePadFocus(dir) {
+    const list = interactiveTargets();
+    if (!list.length) { showPadRing(null); return false; }
+    if (padCur < 0 || padCur >= list.length) {
+      padCur = layoutPadStart(list);
+      showPadRing(list[padCur]);
+      return true;
+    }
+    const next = layoutPadPick(dir, padCur, list);
+    if (next >= 0) {
+      padCur = next;
+      showPadRing(list[padCur]);
+      list[padCur].node.dispatchEvent(new Event('focus'));
+      return true;
+    }
+    return false;
+  }
+
+  function padTick(now) {
+    const pads = navigator.getGamepads ? navigator.getGamepads() : null;
+    const p = pads && pads[0];
+    if (!p) { if (!document.activeElement || document.activeElement === document.body) showPadRing(null); return; }
+    const ax = p.axes[0] || 0, ay = p.axes[1] || 0;
+    const l = (p.buttons[14] && p.buttons[14].pressed) || ax < -.5;
+    const r = (p.buttons[15] && p.buttons[15].pressed) || ax > .5;
+    const u = (p.buttons[12] && p.buttons[12].pressed) || ay < -.5;
+    const d = (p.buttons[13] && p.buttons[13].pressed) || ay > .5;
+    if ((l || r || u || d) && now - padLastMove > .22) {
+      padLastMove = now;
+      movePadFocus(r ? 'r' : l ? 'l' : d ? 'd' : 'u');
+    }
+    const aPressed = !!(p.buttons[0] && p.buttons[0].pressed);
+    if (aPressed && !padLastA) {
+      const list = interactiveTargets();
+      if (padCur >= 0 && list[padCur]) list[padCur].node.dispatchEvent(new MouseEvent('click'));
+    }
+    padLastA = aPressed;
+    const bPressed = !!(p.buttons[1] && p.buttons[1].pressed);
+    if (bPressed && !padLastB) {
+      const back = $('overlay').querySelector('[data-act="back"]');
+      if (back) back.dispatchEvent(new MouseEvent('click'));
+    }
+    padLastB = bPressed;
+  }
+  /* Orchestration: main game flow, Scene A / Scene B interactive handlers, animation loop, dev QA hooks & offline worker. */
+  const playFlow = { phase: 'title', prevIdx: null, workshopQueued: false };
+  const uxHooksReady = () => { uxHooks.replay = i => openRoom(i, true); };
+  uxHooksReady();
+
+  function registerOfflineWorker() {
+    if (!offlineWorkerAllowed(location.search, location.protocol, 'serviceWorker' in navigator)) return;
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+
+  function onSettingChanged(key, value) {
+    if (key === 'sound') { muted = !value; if (typeof refreshAudioGains === 'function') refreshAudioGains(); }
+    if (key === 'subtitles' && typeof TK !== 'undefined') TK.refreshSubtitles();
+  }
+
+  function roomArtSet(idx, extraWords) {
+    const lv = LEVELS[idx];
+    if (!lv) return [];
+    return roomArt(lv, LINES, { wear: save.outfit, extraWords: extraWords || [], last: idx === LEVELS.length - 1 });
+  }
+
+  function onStartJourney() {
+    const idx = nextRoomIndex();
+    const go = () => openRoom(idx);
+    if (!save.flags.prologue && idx === 0) {
+      loadArt(assetPlan(LEVELS, LINES, { wear: save.outfit }).prologue, ART_PATIENCE).then(() => {
+        save.flags.prologue = true; saveWrite();
+        showStory(['p1', 'p2', 'p3'], go);
+      });
+    } else go();
+  }
+
+  function openRoom(idx, skipRecall) {
+    const lv = LEVELS[idx];
+    if (!lv) return;
+    const prevIdx = playFlow.prevIdx;
+    const prevLv = !skipRecall && prevIdx != null && prevIdx !== idx ? LEVELS[prevIdx] : null;
+    const recallIds = prevLv ? recallWordsFor(prevLv.words, save.words, reviewContext(save)) : [];
+    const needArt = roomArtSet(idx, recallIds);
+    playFlow.phase = 'story';
+    playFlow.workshopQueued = false;
+
+    loadArt(needArt, ART_PATIENCE).then(() => {
+      const startPlay = () => {
+        reviewAdvanceClock(save); saveWrite();
+        playFlow.phase = 'play';
+        game.start(idx);
+        sceneDrawn.idx = -1;
+        renderStage(game, true);
+        syncHud();
+        talkOnEvents(game.drain(), game);
+      };
+      const showCard = () => showChapter(idx, startPlay);
+      if (recallIds.length) showRecall(prevLv, showCard, recallIds);
+      else showCard();
+    });
+  }
+
+  function onHudReplay() {
+    if (game.state !== 'play') return;
+    playFlow.workshopQueued = false;
+    game.start(game.index);
+    sceneDrawn.idx = -1;
+    renderStage(game, true);
+    syncHud();
+    talkOnEvents(game.drain(), game);
+  }
+
+  function onHotspotClick(id) {
+    if (!canPlay() || game.screen !== 0) return;
+    unlockAudio();
+    const h = game.hotspots.find(x => x.id === id);
+    if (!h || h.opened) return;
+    const prevReady = game.workshopReady;
+    if (!game.tapHotspot(id)) return;
+    if (h.kind === 'word') spawnOrbArc(h.x, h.y, 130, 45);
+    uxConfetti($('fx'), h.x, h.y, h.kind === 'word' ? 16 : 12);
+    renderStage(game, false);
+    const evs = game.drain();
+    audioOnEvents(evs, game);
+    talkOnEvents(evs, game);
+    if (!prevReady && game.workshopReady && game.screen === 0 && !playFlow.workshopQueued) {
+      playFlow.workshopQueued = true;
+      setTimeout(() => {
+        if (game.state === 'play' && game.screen === 0 && !storyIsOpen()) onEnterWorkshop();
+      }, 2600);
+    }
+  }
+
+  function onEnterWorkshop() {
+    if (!canPlay() || game.screen !== 0) return;
+    unlockAudio();
+    if (!game.enterWorkshop(false)) return;
+    uxSfx('page');
+    renderStage(game, false);
+    const evs = game.drain();
+    audioOnEvents(evs, game);
+    talkOnEvents(evs, game);
+  }
+
+  let lastHoverStone = { chunk: '', t: 0 };
+  function onStoneHover(chunk) {
+    if (!canPlay() || game.screen !== 1) return;
+    const now = performance.now();
+    if (chunk === lastHoverStone.chunk && now - lastHoverStone.t < 450) return;
+    lastHoverStone = { chunk, t: now };
+    if (hasLineKey('ph_' + chunk)) voice.line('ph_' + chunk, { interrupt: true, priority: 0, tag: 'ui', maxWait: 500, subtitle: false });
+  }
+
+  function onStoneClick(chunk, btnNode) {
+    if (!canPlay() || game.screen !== 1) return;
+    unlockAudio();
+    const ok = game.tapStone(chunk);
+    const evs = game.drain();
+    audioOnEvents(evs, game);
+    talkOnEvents(evs, game);
+    if (!ok) {
+      uxNudge(btnNode);
+      renderStage(game, false);
+      return;
+    }
+    const blended = evs.find(e => e.type === 'word_blended');
+    if (blended) {
+      const wsAn = $('wsAnimal');
+      if (wsAn) { wsAn.classList.add('ux-anim-pulse'); uxConfetti($('fx'), 480, 202, 26); }
+    }
+    if (game.state === 'clear' || game.state === 'win') {
+      const lvIdx = game.index;
+      setTimeout(() => completeRoom(lvIdx), 1700);
+      return;
+    }
+    if (blended) {
+      setTimeout(() => { if (game.state === 'play') renderStage(game, false); }, 1350);
+    } else {
+      renderStage(game, false);
+    }
+  }
+
+  function onPupTap(who) {
+    if (!canPlay()) return;
+    unlockAudio();
+    game.cheerFriend(who);
+    const pt = who === 'skye' ? game.skye : game.labrador;
+    uxConfetti($('fx'), pt.x, pt.y - 45, 14);
+    const evs = game.drain();
+    audioOnEvents(evs, game);
+    talkOnEvents(evs, game);
+  }
+
+  function openMemoryOverlay(memId) {
+    showMemory(game.level(), memId, () => {
+      playFlow.phase = 'play';
+      syncHud();
+    });
+  }
+
+  function triggerHint() {
+    if (!canPlay()) return;
+    unlockAudio();
+    game.idleTime = 12;
+    game.hintTarget = game.computeHintTarget();
+    uxSfx('tap');
+    voice.line('idle_' + (1 + Math.floor(Math.random() * 4)), { interrupt: true, tag: 'hint', maxWait: 3000 });
+  }
+
+  function completeRoom(lvIdx) {
+    const lv = LEVELS[lvIdx];
+    playFlow.phase = 'clear';
+    playFlow.prevIdx = lvIdx;
+    const acornsAll = !game.acorns || game.acorns.total === 0 ? true : game.acorns.got >= game.acorns.total;
+    markRoom(lv.id, { cleared: true, memory: !!game.memoryFound, stars: [true, !!game.memoryFound, acornsAll] });
+    for (const wid of lv.words) if (!save.stickers.includes(wid)) save.stickers.push(wid);
+    saveWrite();
+
+    showClear(lvIdx, () => {
+      if (lvIdx >= LEVELS.length - 1) {
+        const endPlan = assetPlan(LEVELS, LINES, { wear: save.outfit });
+        loadArt(endPlan.ending, ART_PATIENCE).then(() => showStory(['win', 'end'], () => showFinale(showTitle)));
+      } else {
+        openRoom(lvIdx + 1);
+      }
+    });
+  }
+
+  /* Main loop */
+  let lastT = performance.now(), secAcc = 0;
+  function frame(now) {
+    const dt = Math.min(.05, (now - lastT) / 1000);
+    lastT = now;
+    const tSec = now / 1000;
+    inputView.panX += (inputView.targetPan - inputView.panX) * Math.min(1, dt * 6);
+    if (canPlay()) {
+      game.step(dt);
+      const evs = game.drain();
+      if (evs.length) { audioOnEvents(evs, game); talkOnEvents(evs, game); }
+      renderPups(game, tSec);
+      secAcc += dt;
+      if (secAcc >= 1) { save.totalPlaySeconds += Math.floor(secAcc); secAcc %= 1; saveSoon(); }
+    }
+    updateAmbientMotion(tSec, inputView.panX);
+    fxTick(dt, tSec, game);
+    audioTick();
+    padTick(tSec);
+    requestAnimationFrame(frame);
+  }
+
+  /* Boot sequence: preload title set (< 2.5 MB), render Title (or DEV ?dev=1&qa=...) */
+  const titlePlan = assetPlan(LEVELS, LINES, { wear: save.outfit });
+  const qaMode = DEV ? new URLSearchParams(location.search).get('qa') : null;
+  if (DEV && qaMode === 'unlock') {
+    save.unlocked.rooms = LEVELS.length;
+    for (const lv of LEVELS) markRoom(lv.id, { cleared: true, memory: true, stars: [true, true, true] });
+    for (const w of WORDS) if (w.kind === 'core' && !save.stickers.includes(w.id)) save.stickers.push(w.id);
+    save.outfit.skye = { dress: 1, hat: 'wreath' };
+    save.outfit.labrador = { dress: 1, hat: 'detective' };
+  }
+
+  loadArt(titlePlan.title, ART_PATIENCE).then(() => {
+    registerOfflineWorker();
+    if (DEV && qaMode === 'win') {
+      save.unlocked.rooms = LEVELS.length;
+      for (const lv of LEVELS) markRoom(lv.id, { cleared: true, memory: true, stars: [true, true, true] });
+      for (const w of WORDS) {
+        if (w.kind !== 'core') continue;
+        if (!save.stickers.includes(w.id)) save.stickers.push(w.id);
+        save.words[w.id] = { heard: 8, quiz: 1, seen: true };
+      }
+      save.outfit.skye = { dress: 1, hat: 'crown' };
+      save.outfit.labrador = { dress: 2, hat: 'detective' };
+      loadArt(titlePlan.ending, ART_PATIENCE).then(() => showStory(['win', 'end'], () => showFinale(showTitle)));
+    } else {
+      showTitle();
+    }
+    requestAnimationFrame(frame);
+  });
+})();
+</script>
+</body>
+</html>

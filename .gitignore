@@ -1,0 +1,22 @@
+# Tool environments
+.tools/
+.venv/
+__pycache__/
+*.pyc
+
+# npm dev tooling (lint, type check); package-lock.json is kept
+node_modules/
+
+# Intermediate output; published assets live in /game
+art/game/
+
+# Local test copies and preview config
+_test.html
+.claude/
+
+# Secrets
+.env
+.env.*
+
+# OS / editor
+.DS_Store
