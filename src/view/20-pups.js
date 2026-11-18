@@ -9,11 +9,11 @@
     const scale = who === 'skye' ? .42 : .45;
     const w = hw * scale, h = hh * scale;
     const dx = who === 'skye'
-      ? (pose === 'fly' ? 14 : (pose === 'idle' ? 10 : 2))
-      : (pose === 'cheer' ? 12 : (pose === 'search' ? 38 : 34));
+      ? (pose === 'fly' ? 11 : (pose === 'idle' ? 8 : 4))
+      : (pose === 'cheer' ? -2 : (pose === 'search' ? 5 : (pose === 'walk' ? 3 : 2)));
     const dy = who === 'skye'
-      ? (pose === 'cheer' ? -114 : -106)
-      : (pose === 'cheer' ? -130 : (pose === 'search' ? -98 : -118));
+      ? (pose === 'cheer' ? -110 : -106)
+      : (pose === 'cheer' ? -131 : -126);
     img(hName, dx - w / 2, dy - h / 2, w, h, parent);
   }
 

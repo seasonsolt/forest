@@ -11,7 +11,7 @@ HD = GAME / 'hd'
 INDEX = ART / 'hd.json'
 SCALE = 2
 GRAIN = 3.0
-STAGE = re.compile(r'^(bg_\w+|story_\w+|key|portrait_\w+|(skye|labrador)_\w+|hat_\w+|prop_\w+|fx_\w+)$')
+STAGE = re.compile(r'^(bg_\w+|story_\w+|key|portrait_\w+|(skye|labrador)_\w+|hat_\w+|prop_\w+|fx_\w+|word_\w+)$')
 
 
 def find_esrgan():

@@ -93,7 +93,8 @@ def title_art():
 def make_sw():
     shell = ['forest.html', 'manifest.webmanifest', 'game/icon-192.png', 'game/icon-512.png', 'game/icon-maskable-512.png', 'game/apple-touch-icon.png']
     fonts = [f'game/{f}?v={asset_version}' for f in ('font_zh.woff2', 'font_en.woff2') if (GAME / f).is_file()]
-    precache = shell + fonts + [f'game/subs.json?v={asset_version}'] + [f'game/{n}?v={asset_version}' for n in title_art()]
+    sd_webp = sorted(f'game/{p.name}?v={asset_version}' for p in GAME.glob('*.webp'))
+    precache = shell + fonts + [f'game/subs.json?v={asset_version}'] + sd_webp
     for path in precache:
         assert (ROOT / path.split('?')[0]).is_file() or path == 'forest.html', f'precache entry without a file: {path}'
     sw = SW_TEMPLATE.read_text(encoding='utf8')

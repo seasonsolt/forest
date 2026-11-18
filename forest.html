@@ -13,8 +13,8 @@
 <meta name="apple-mobile-web-app-title" content="森林探案">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style>
-  @font-face { font-family: 'ZCOOL KuaiLe'; src: url("game/font_zh.woff2?v=aec63c32b67e") format('woff2'); font-display: swap; }
-  @font-face { font-family: 'Fredoka'; src: url("game/font_en.woff2?v=aec63c32b67e") format('woff2'); font-weight: 500 700; font-display: swap; }
+  @font-face { font-family: 'ZCOOL KuaiLe'; src: url("game/font_zh.woff2?v=1fd50823ae6a") format('woff2'); font-display: swap; }
+  @font-face { font-family: 'Fredoka'; src: url("game/font_en.woff2?v=1fd50823ae6a") format('woff2'); font-weight: 500 700; font-display: swap; }
   :root { --night: #112219; --forest: #1c3526; --gold: #ffd27a; --cream: #fff7e6; }
   * { box-sizing: border-box; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
   html, body {
@@ -1145,11 +1145,11 @@ function createGame() {
   }
 
   const game = createGame();
-  const SIZES = {"bg_canopy":[1280,720,640],"bg_meadow":[1280,720,640],"bg_pond":[1280,720,640],"bg_woods":[1280,720,640],"fx_heart":[180,113,90],"fx_star":[180,173,90],"hat_crown":[110,73,55],"hat_detective":[110,73,55],"hat_wreath":[110,53,55],"key":[1280,720,640],"labrador_cheer":[236,256,118],"labrador_idle":[245,248,122],"labrador_search":[266,248,133],"labrador_walk":[299,248,149],"portrait_labrador":[220,220,110],"portrait_skye":[220,220,110],"prop_bench":[220,136,110],"prop_bush":[180,140,90],"prop_lily":[180,108,90],"prop_mushroom":[174,180,87],"prop_nest":[180,119,90],"prop_orb":[160,180,80],"prop_postcard":[180,111,90],"prop_rock":[180,149,90],"prop_stone":[220,153,110],"prop_stump":[180,141,90],"skye_cheer":[158,204,79],"skye_fly":[236,196,118],"skye_idle":[181,196,90],"story_open":[1280,720,640],"story_win":[1280,720,640],"ui_meet":[220,220,110],"word_bat":[220,134,110],"word_box":[220,146,110],"word_bug":[220,111,110],"word_cat":[210,220,105],"word_dig":[220,164,110],"word_dog":[220,215,110],"word_drum":[220,165,110],"word_duck":[220,194,110],"word_fly":[220,141,110],"word_fox":[207,220,103],"word_frog":[220,160,110],"word_hen":[220,167,110],"word_hop":[220,202,110],"word_hug":[211,220,105],"word_hum":[220,167,110],"word_log":[220,196,110],"word_mud":[220,103,110],"word_nap":[220,141,110],"word_net":[220,211,110],"word_pig":[220,185,110],"word_pup":[220,172,110],"word_run":[220,182,110],"word_sit":[220,194,110],"word_twig":[220,182,110]};
-  const ASSET_VERSION = "aec63c32b67e";
+  const SIZES = {"bg_canopy":[1280,720,640],"bg_meadow":[1280,720,640],"bg_pond":[1280,720,640],"bg_woods":[1280,720,640],"fx_heart":[180,157,90],"fx_star":[180,172,90],"hat_crown":[110,68,55],"hat_detective":[110,76,55],"hat_wreath":[110,97,55],"key":[1280,720,640],"labrador_cheer":[176,256,88],"labrador_idle":[151,248,75],"labrador_search":[204,248,102],"labrador_walk":[155,248,77],"portrait_labrador":[220,220,110],"portrait_skye":[220,220,110],"prop_bench":[220,135,110],"prop_bush":[180,140,90],"prop_lily":[180,124,90],"prop_mushroom":[143,180,71],"prop_nest":[180,118,90],"prop_orb":[140,180,70],"prop_postcard":[180,142,90],"prop_rock":[180,150,90],"prop_stone":[220,152,110],"prop_stump":[180,141,90],"skye_cheer":[184,204,92],"skye_fly":[262,196,131],"skye_idle":[167,196,83],"story_open":[1280,720,640],"story_win":[1280,720,640],"ui_meet":[220,220,110],"word_bat":[220,134,110],"word_box":[220,198,110],"word_bug":[220,163,110],"word_cat":[209,220,104],"word_dig":[220,181,110],"word_dog":[215,220,107],"word_drum":[220,204,110],"word_duck":[175,220,87],"word_fly":[220,182,110],"word_fox":[207,220,103],"word_frog":[220,204,110],"word_hen":[202,220,101],"word_hop":[220,201,110],"word_hug":[220,204,110],"word_hum":[220,195,110],"word_log":[220,140,110],"word_mud":[220,129,110],"word_nap":[220,148,110],"word_net":[220,211,110],"word_pig":[208,220,104],"word_pup":[217,220,108],"word_run":[220,182,110],"word_sit":[183,220,91],"word_twig":[220,187,110]};
+  const ASSET_VERSION = "1fd50823ae6a";
   const assetURL = file => `game/${file}?v=${ASSET_VERSION}`;
 
-  const HD_NAMES = new Set(["bg_canopy","bg_meadow","bg_pond","bg_woods","fx_heart","fx_star","hat_crown","hat_detective","hat_wreath","key","labrador_cheer","labrador_cheer_d1","labrador_cheer_d2","labrador_idle","labrador_idle_d1","labrador_idle_d2","labrador_search","labrador_search_d1","labrador_search_d2","labrador_walk","labrador_walk_d1","labrador_walk_d2","portrait_labrador","portrait_skye","prop_bench","prop_bush","prop_lily","prop_mushroom","prop_nest","prop_orb","prop_postcard","prop_rock","prop_stone","prop_stump","skye_cheer","skye_cheer_d1","skye_cheer_d2","skye_fly","skye_fly_d1","skye_fly_d2","skye_idle","skye_idle_d1","skye_idle_d2","story_open","story_win"]);
+  const HD_NAMES = new Set(["bg_canopy","bg_meadow","bg_pond","bg_woods","fx_heart","fx_star","hat_crown","hat_detective","hat_wreath","key","labrador_cheer","labrador_cheer_d1","labrador_cheer_d2","labrador_idle","labrador_idle_d1","labrador_idle_d2","labrador_search","labrador_search_d1","labrador_search_d2","labrador_walk","labrador_walk_d1","labrador_walk_d2","portrait_labrador","portrait_skye","prop_bench","prop_bush","prop_lily","prop_mushroom","prop_nest","prop_orb","prop_postcard","prop_rock","prop_stone","prop_stump","skye_cheer","skye_cheer_d1","skye_cheer_d2","skye_fly","skye_fly_d1","skye_fly_d2","skye_idle","skye_idle_d1","skye_idle_d2","story_open","story_win","word_bat","word_box","word_bug","word_cat","word_dig","word_dog","word_drum","word_duck","word_fly","word_fox","word_frog","word_hen","word_hop","word_hug","word_hum","word_log","word_mud","word_nap","word_net","word_pig","word_pup","word_run","word_sit","word_twig"]);
   const HD_FROM = 1700;
   const hd = { on: false, ready: new Set(), asked: new Set(), live: new Set(), timer: 0 };
   const ART_PATIENCE = 1500;
@@ -1495,11 +1495,11 @@ function createGame() {
     const scale = who === 'skye' ? .42 : .45;
     const w = hw * scale, h = hh * scale;
     const dx = who === 'skye'
-      ? (pose === 'fly' ? 14 : (pose === 'idle' ? 10 : 2))
-      : (pose === 'cheer' ? 12 : (pose === 'search' ? 38 : 34));
+      ? (pose === 'fly' ? 11 : (pose === 'idle' ? 8 : 4))
+      : (pose === 'cheer' ? -2 : (pose === 'search' ? 5 : (pose === 'walk' ? 3 : 2)));
     const dy = who === 'skye'
-      ? (pose === 'cheer' ? -114 : -106)
-      : (pose === 'cheer' ? -130 : (pose === 'search' ? -98 : -118));
+      ? (pose === 'cheer' ? -110 : -106)
+      : (pose === 'cheer' ? -131 : -126);
     img(hName, dx - w / 2, dy - h / 2, w, h, parent);
   }
 
@@ -1941,8 +1941,8 @@ function createGame() {
     return root;
   }
 
-  function uxPic(name, x, y, w, h, fallback) {
-    if (SIZES[name]) return `<image href="${SRC(name)}" x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="xMidYMid slice"/>`;
+  function uxPic(name, x, y, w, h, fallback, fit) {
+    if (SIZES[name]) return `<image href="${SRC(name)}" x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="xMidYMid ${fit || 'slice'}"/>`;
     return fallback || '';
   }
 
@@ -2012,7 +2012,7 @@ function createGame() {
       return `<g class="ux-pop" data-pop="${i}"><g class="ux-btn" data-word="${w.id}" role="button" tabindex="0" aria-label="${w.en}" transform="translate(${x} ${y})">
         <g class="btn-vis" filter="url(#softShadow)">
         <rect width="${cw}" height="${ch}" rx="22" fill="#fffaf0" stroke="#e4b457" stroke-width="3.5"/>
-        ${uxPic(w.icon || 'word_' + w.id, pad, 14, cw - pad * 2, imgH)}
+        ${uxPic(w.icon || 'word_' + w.id, pad, 14, cw - pad * 2, imgH, '', 'meet')}
         <text class="latin" x="${cw / 2}" y="${ch - 14}" text-anchor="middle" font-size="${cw > 180 ? 32 : 26}" fill="#2b1f09">${w.en}</text>
       </g></g></g>`;
     }).join('');

@@ -83,7 +83,7 @@ def recolor_sprite(stem, who, idx):
             keep_ids.append(cid)
         mask = np.isin(lbl, keep_ids)
     else:
-        mask = (alpha > 20) & (h_deg >= 195.0) & (h_deg <= 255.0) & (s >= 0.20) & (v <= 0.85)
+        mask = (alpha > 20) & (h_deg >= 180.0) & (h_deg <= 258.0) & (s >= 0.14) & (v >= 0.08) & (v <= 0.98)
 
     if not np.any(mask):
         im.save(GAME / f'{stem}_d{idx}.webp', quality=88, alpha_quality=90, method=6)

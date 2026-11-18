@@ -40,8 +40,8 @@
     return root;
   }
 
-  function uxPic(name, x, y, w, h, fallback) {
-    if (SIZES[name]) return `<image href="${SRC(name)}" x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="xMidYMid slice"/>`;
+  function uxPic(name, x, y, w, h, fallback, fit) {
+    if (SIZES[name]) return `<image href="${SRC(name)}" x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="xMidYMid ${fit || 'slice'}"/>`;
     return fallback || '';
   }
 
@@ -111,7 +111,7 @@
       return `<g class="ux-pop" data-pop="${i}"><g class="ux-btn" data-word="${w.id}" role="button" tabindex="0" aria-label="${w.en}" transform="translate(${x} ${y})">
         <g class="btn-vis" filter="url(#softShadow)">
         <rect width="${cw}" height="${ch}" rx="22" fill="#fffaf0" stroke="#e4b457" stroke-width="3.5"/>
-        ${uxPic(w.icon || 'word_' + w.id, pad, 14, cw - pad * 2, imgH)}
+        ${uxPic(w.icon || 'word_' + w.id, pad, 14, cw - pad * 2, imgH, '', 'meet')}
         <text class="latin" x="${cw / 2}" y="${ch - 14}" text-anchor="middle" font-size="${cw > 180 ? 32 : 26}" fill="#2b1f09">${w.en}</text>
       </g></g></g>`;
     }).join('');

@@ -133,15 +133,31 @@ def split_sheet_islands(sheet_img, rows=3, cols=4):
         for c in range(cols):
             x0, x1 = x_cuts[c], x_cuts[c + 1]
             cell = clean_rgba.crop((x0, y0, x1, y1))
-            bbox = cell.getchannel('A').point(lambda v: 255 if v > 18 else 0).getbbox()
+            arr = np.asarray(cell)
+            solid = arr[..., 3] > 42
+            lbl, ncomp = label(solid)
+            if ncomp > 1:
+                counts = np.bincount(lbl.ravel())
+                main_id = int(np.argmax(counts[1:]) + 1)
+                cw = arr.shape[1]
+                keep = [cid for cid in range(1, ncomp + 1)
+                        if counts[cid] >= max(60, counts[main_id] * 0.015)
+                        or (np.any(lbl[:, 0] == cid) == False and np.any(lbl[:, cw - 1] == cid) == False)]
+                clean_mask = np.isin(lbl, keep)
+                arr = arr.copy()
+                arr[~clean_mask, 3] = 0
+                cell = Image.fromarray(arr, 'RGBA')
+            bbox = cell.getchannel('A').point(lambda v: 255 if v > 42 else 0).getbbox()
             out[(r, c)] = cell.crop(bbox) if bbox else cell
     return out
 
 
-def circle_mask(im, size=220):
-    sq = min(im.width, im.height)
-    cx, cy = im.width // 2, im.height // 2
-    crop = im.crop((cx - sq // 2, cy - sq // 2, cx - sq // 2 + sq, cy - sq // 2 + sq)).resize((size, size), Image.LANCZOS)
+def circle_mask(im, size=220, bottom_align=False):
+    sq = max(im.width, im.height)
+    canvas = Image.new('RGBA', (sq, sq), (0, 0, 0, 0))
+    py = sq - im.height if bottom_align else (sq - im.height) // 2
+    canvas.paste(im, ((sq - im.width) // 2, py), im)
+    crop = canvas.resize((size, size), Image.LANCZOS)
     mask = Image.new('L', (size, size), 0)
     ImageDraw.Draw(mask).ellipse((2, 2, size - 2, size - 2), fill=255)
     existing_a = crop.getchannel('A')
@@ -187,7 +203,9 @@ def main():
             for c, name in enumerate(row):
                 cut = cells[(r, c)]
                 raw_sprites[name] = cut
-                if name in ('portrait_skye', 'ui_meet'):
+                if name == 'portrait_skye':
+                    out = circle_mask(cut, 220, bottom_align=True)
+                elif name == 'ui_meet':
                     out = circle_mask(cut, 220)
                 elif name in HERO_TARGETS:
                     out = resize_max(cut, target_h=HERO_TARGETS[name])
@@ -206,7 +224,12 @@ def main():
 
     if 'labrador_idle' in raw_sprites:
         lab = raw_sprites['labrador_idle']
-        head = lab.crop((round(lab.width * 0.36), 0, lab.width, round(lab.height * 0.64)))
+        top_h = round(lab.height * 0.56)
+        top_bbox = lab.crop((0, 0, lab.width, top_h)).getchannel('A').point(lambda v: 255 if v > 18 else 0).getbbox()
+        cx = (top_bbox[0] + top_bbox[2]) // 2 if top_bbox else lab.width // 2
+        side = min(lab.width, top_h)
+        x0 = max(0, min(lab.width - side, cx - side // 2))
+        head = lab.crop((x0, 0, x0 + side, side))
         plab = circle_mask(head, 220)
         plab.save(GAME / 'portrait_labrador.webp', quality=88, alpha_quality=90, method=6)
         sizes['portrait_labrador'] = [220, 220, 110]
