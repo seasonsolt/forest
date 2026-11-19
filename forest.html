@@ -1277,7 +1277,7 @@ function createGame() {
   fillPollen($('motesBack'), 28, false);
   fillPollen($('motesFront'), 10, true);
   /* Woodland stage rendering: backdrop parallax, ambient wildlife, Scene A letter hotspots, and Scene B 26-Letter Workshop. */
-  let sceneDrawn = { idx: -1, screen: -1, round: -1, step: '', workshopReady: false, assist: false, pickedLetter: '' };
+  let sceneDrawn = { idx: -1, screen: -1, opened: -1, round: -1, step: '', workshopReady: false, assist: false, pickedLetter: '' };
 
   function drawStageStatic(lv) {
     $('bg').setAttribute('href', SRC(lv.bg));
@@ -1497,15 +1497,16 @@ function createGame() {
   function renderStage(g, force) {
     const lv = g.level();
     const w = g.workshop;
+    const opened = g.hotspots.filter(h => h.opened).length;
     const needStatic = force || sceneDrawn.idx !== g.index;
-    const needScene = needStatic || sceneDrawn.screen !== g.screen || sceneDrawn.workshopReady !== g.workshopReady
+    const needScene = needStatic || sceneDrawn.screen !== g.screen || sceneDrawn.opened !== opened || sceneDrawn.workshopReady !== g.workshopReady
       || (g.screen === 1 && w && (sceneDrawn.round !== w.roundIdx || sceneDrawn.step !== w.step || sceneDrawn.assist !== w.assistGlow || sceneDrawn.pickedLetter !== w.pickedLetter));
     if (needStatic) drawStageStatic(lv);
     if (needScene) {
       if (g.screen === 0) drawSceneA(g);
       else drawSceneB(g);
       sceneDrawn = {
-        idx: g.index, screen: g.screen, round: w ? w.roundIdx : -1, step: w ? w.step : '',
+        idx: g.index, screen: g.screen, opened, round: w ? w.roundIdx : -1, step: w ? w.step : '',
         workshopReady: g.workshopReady, assist: !!(w && w.assistGlow), pickedLetter: w ? w.pickedLetter : '',
       };
       if (typeof syncHud === 'function') syncHud();
