@@ -13,8 +13,8 @@
 <meta name="apple-mobile-web-app-title" content="森林探案">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style>
-  @font-face { font-family: 'ZCOOL KuaiLe'; src: url("game/font_zh.woff2?v=be0792bef113") format('woff2'); font-display: swap; }
-  @font-face { font-family: 'Fredoka'; src: url("game/font_en.woff2?v=be0792bef113") format('woff2'); font-weight: 500 700; font-display: swap; }
+  @font-face { font-family: 'ZCOOL KuaiLe'; src: url("game/font_zh.woff2?v=b6d3e7aede95") format('woff2'); font-display: swap; }
+  @font-face { font-family: 'Fredoka'; src: url("game/font_en.woff2?v=b6d3e7aede95") format('woff2'); font-weight: 500 700; font-display: swap; }
   :root { --night: #112219; --forest: #1c3526; --gold: #ffd27a; --cream: #fff7e6; }
   * { box-sizing: border-box; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
   html, body {
@@ -68,6 +68,8 @@
   @keyframes uxPop { 0% { opacity: 0; transform: scale(.45); } 65% { transform: scale(1.08); } 100% { opacity: 1; transform: scale(1); } }
   .ux-pop { opacity: 0; transform: scale(.45); }
   .ux-pop.on { opacity: 1; transform: scale(1); animation: uxPop .42s cubic-bezier(.2, .9, .3, 1.3) both; }
+  @keyframes pianoHit { 0% { transform: scale(1); } 35% { transform: scale(1.13); filter: drop-shadow(0 0 14px rgba(255, 224, 130, .95)); } 100% { transform: scale(1); } }
+  .piano-hit > .btn-vis { animation: pianoHit .36s cubic-bezier(.2, .9, .3, 1.3); }
   @keyframes pageIn { from { opacity: 0; } to { opacity: 1; } }
   .page { animation: pageIn .35s ease; }
 
@@ -647,6 +649,111 @@ function createGame() {
     const i = rects.findIndex(r => r.pulse);
     return i >= 0 ? i : 0;
   }
+  /* 26-Letter ABC Song melody table (C-major Twinkle) & toddler-friendly stroke paths + checkpoints for Starlight Tracing. Plain global script, no DOM access. */
+  const ABC_SONG_NOTES = [
+    { id: 'a', row: 0, midi: 60, beats: 1 },
+    { id: 'b', row: 0, midi: 60, beats: 1 },
+    { id: 'c', row: 0, midi: 67, beats: 1 },
+    { id: 'd', row: 0, midi: 67, beats: 1 },
+    { id: 'e', row: 0, midi: 69, beats: 1 },
+    { id: 'f', row: 0, midi: 69, beats: 1 },
+    { id: 'g', row: 0, midi: 67, beats: 2 },
+
+    { id: 'h', row: 1, midi: 65, beats: 1 },
+    { id: 'i', row: 1, midi: 65, beats: 1 },
+    { id: 'j', row: 1, midi: 64, beats: 1 },
+    { id: 'k', row: 1, midi: 64, beats: 1 },
+    { id: 'l', row: 1, midi: 62, beats: 0.5 },
+    { id: 'm', row: 1, midi: 62, beats: 0.5 },
+    { id: 'n', row: 1, midi: 62, beats: 0.5 },
+    { id: 'o', row: 1, midi: 62, beats: 0.5 },
+    { id: 'p', row: 1, midi: 60, beats: 2 },
+
+    { id: 'q', row: 2, midi: 67, beats: 1 },
+    { id: 'r', row: 2, midi: 67, beats: 1 },
+    { id: 's', row: 2, midi: 65, beats: 2 },
+    { id: 't', row: 2, midi: 64, beats: 1 },
+    { id: 'u', row: 2, midi: 64, beats: 1 },
+    { id: 'v', row: 2, midi: 62, beats: 2 },
+
+    { id: 'w', row: 3, midi: 67, beats: 1.5 },
+    { id: 'x', row: 3, midi: 65, beats: 1.5 },
+    { id: 'y', row: 3, midi: 64, beats: 1.5 },
+    { id: 'z', row: 3, midi: 60, beats: 2.5 },
+  ];
+
+  /** @type {Record<string, number[][][]>} */
+  const LETTER_STROKES = {
+    a: [[[50, 12], [20, 88]], [[50, 12], [80, 88]], [[31, 60], [69, 60]]],
+    b: [[[26, 12], [26, 88]], [[26, 12], [62, 12], [75, 21], [75, 38], [62, 48], [26, 48]], [[26, 48], [66, 48], [79, 59], [79, 77], [65, 88], [26, 88]]],
+    c: [[[78, 24], [62, 12], [38, 14], [22, 30], [20, 50], [24, 72], [40, 86], [64, 88], [78, 76]]],
+    d: [[[26, 12], [26, 88]], [[26, 12], [58, 12], [76, 26], [80, 50], [76, 74], [58, 88], [26, 88]]],
+    e: [[[28, 12], [28, 88]], [[28, 12], [76, 12]], [[28, 50], [68, 50]], [[28, 88], [76, 88]]],
+    f: [[[30, 12], [30, 88]], [[30, 12], [76, 12]], [[30, 50], [68, 50]]],
+    g: [[[78, 24], [62, 12], [38, 14], [22, 30], [20, 50], [24, 72], [40, 86], [64, 88], [78, 74], [78, 54], [54, 54]]],
+    h: [[[26, 12], [26, 88]], [[74, 12], [74, 88]], [[26, 50], [74, 50]]],
+    i: [[[50, 12], [50, 88]], [[30, 12], [70, 12]], [[30, 88], [70, 88]]],
+    j: [[[64, 12], [64, 66], [56, 83], [40, 88], [25, 80], [22, 68]], [[38, 12], [78, 12]]],
+    k: [[[26, 12], [26, 88]], [[76, 12], [26, 52]], [[38, 43], [78, 88]]],
+    l: [[[28, 12], [28, 88], [76, 88]]],
+    m: [[[20, 12], [20, 88]], [[20, 12], [50, 62], [80, 12]], [[80, 12], [80, 88]]],
+    n: [[[24, 12], [24, 88]], [[24, 12], [76, 88]], [[76, 12], [76, 88]]],
+    o: [[[50, 12], [28, 19], [18, 40], [18, 60], [28, 81], [50, 88], [72, 81], [82, 60], [82, 40], [72, 19], [50, 12]]],
+    p: [[[28, 12], [28, 88]], [[28, 12], [64, 12], [78, 22], [78, 42], [64, 52], [28, 52]]],
+    q: [[[50, 12], [28, 19], [18, 40], [18, 60], [28, 81], [50, 88], [72, 81], [82, 60], [82, 40], [72, 19], [50, 12]], [[58, 68], [84, 90]]],
+    r: [[[26, 12], [26, 88]], [[26, 12], [62, 12], [76, 22], [76, 42], [62, 52], [26, 52]], [[48, 52], [78, 88]]],
+    s: [[[74, 22], [58, 12], [36, 14], [24, 26], [28, 42], [50, 50], [72, 58], [76, 74], [62, 87], [38, 88], [24, 78]]],
+    t: [[[20, 12], [80, 12]], [[50, 12], [50, 88]]],
+    u: [[[24, 12], [24, 62], [34, 82], [50, 88], [66, 82], [76, 62], [76, 12]]],
+    v: [[[22, 12], [50, 88], [78, 12]]],
+    w: [[[14, 12], [32, 88], [50, 36], [68, 88], [86, 12]]],
+    x: [[[22, 12], [78, 88]], [[78, 12], [22, 88]]],
+    y: [[[22, 12], [50, 48]], [[78, 12], [50, 48]], [[50, 48], [50, 88]]],
+    z: [[[22, 12], [78, 12], [22, 88], [78, 88]]],
+  };
+
+  function traceSampleStroke(pts, step = 10) {
+    if (!Array.isArray(pts) || !pts.length) return [];
+    const out = [[pts[0][0], pts[0][1]]];
+    const spacing = Math.max(1, step || 10);
+    for (let i = 1; i < pts.length; i++) {
+      const [x0, y0] = pts[i - 1], [x1, y1] = pts[i];
+      const dist = Math.hypot(x1 - x0, y1 - y0);
+      if (dist < 1e-6) continue;
+      const n = Math.max(1, Math.ceil(dist / spacing));
+      for (let k = 1; k <= n; k++) {
+        const u = k / n;
+        const px = x0 + (x1 - x0) * u;
+        const py = y0 + (y1 - y0) * u;
+        const prev = out[out.length - 1];
+        if (k < n && Math.hypot(px - prev[0], py - prev[1]) < spacing * 0.45) continue;
+        if (k === n && Math.hypot(x1 - prev[0], y1 - prev[1]) < 1e-6) continue;
+        out.push([Number(px.toFixed(2)), Number(py.toFixed(2))]);
+      }
+    }
+    const end = pts[pts.length - 1];
+    const last = out[out.length - 1];
+    if (Math.hypot(end[0] - last[0], end[1] - last[1]) > 0.5) out.push([end[0], end[1]]);
+    return out;
+  }
+
+  function traceAdvance(checkpoints, progressIdx, x, y, radius) {
+    if (!Array.isArray(checkpoints) || !checkpoints.length) return progressIdx || 0;
+    const p = Math.max(0, Math.min(checkpoints.length, progressIdx | 0));
+    if (p >= checkpoints.length) return checkpoints.length;
+    const r = radius > 0 ? radius : 16;
+    const lim = Math.min(checkpoints.length - 1, p + 3);
+    for (let j = p; j <= lim; j++) {
+      const [cx, cy] = checkpoints[j];
+      if (Math.hypot(x - cx, y - cy) <= r) return j + 1;
+    }
+    return p;
+  }
+
+  function traceProjectStroke(pts, boxX, boxY, boxSize) {
+    const s = boxSize / 100;
+    return (pts || []).map(([nx, ny]) => [boxX + nx * s, boxY + ny * s]);
+  }
   /* When the room is live and nothing covers it. Plain global script, no DOM access. */
   function canPlay() { return playFlow.phase === 'play' && game.state === 'play' && !storyIsOpen() && !uxState.modal && !isPortraitView(); }
   /* Spaced review and quiz option picking. Pure: no storage, no DOM, no clock. Plain global script. */
@@ -792,6 +899,9 @@ function createGame() {
       settings: { subtitles: false, english: 'words+phrases', sound: true },
       rooms: {},
       words: {},
+      traced: {},
+      caseMatches: 0,
+      abcSongs: 0,
       totalPlaySeconds: 0,
       roomClock: 0,
       stickers: [],
@@ -827,6 +937,13 @@ function createGame() {
         for (const k of WORD_COUNTERS) if (nat(w[k], 0) > 0) s.words[id][k] = nat(w[k], 0);
       }
     }
+    if (isObj(raw.traced)) {
+      for (const id of Object.keys(raw.traced)) {
+        if (/^[a-z]$/.test(id) && raw.traced[id]) s.traced[id] = true;
+      }
+    }
+    s.caseMatches = nat(raw.caseMatches, 0);
+    s.abcSongs = nat(raw.abcSongs, 0);
     if (Array.isArray(raw.stickers)) s.stickers = raw.stickers.filter(x => typeof x === 'string');
     if (Array.isArray(raw.board)) s.board = raw.board.filter(b => isObj(b) && typeof b.id === 'string' && Number.isFinite(b.x) && Number.isFinite(b.y)).map(b => ({ id: b.id, x: b.x, y: b.y }));
     if (isObj(raw.outfit)) {
@@ -870,6 +987,10 @@ function createGame() {
       for (const k of WORD_COUNTERS) if (nat(o[k], 0) > nat(w[k], 0)) w[k] = nat(o[k], 0);
       for (const k of Object.keys(o)) if (!(k in w)) w[k] = o[k];
     }
+    if (!isObj(mine.traced)) mine.traced = {};
+    for (const id of Object.keys(theirs.traced || {})) if (/^[a-z]$/.test(id) && theirs.traced[id]) mine.traced[id] = true;
+    mine.caseMatches = Math.max(nat(mine.caseMatches, 0), nat(theirs.caseMatches, 0));
+    mine.abcSongs = Math.max(nat(mine.abcSongs, 0), nat(theirs.abcSongs, 0));
     for (const id of theirs.stickers || []) if (!mine.stickers.includes(id)) mine.stickers.push(id);
     for (const b of theirs.board || []) if (!mine.board.some(x => x.id === b.id)) mine.board.push({ id: b.id, x: b.x, y: b.y });
     mine.totalPlaySeconds = Math.max(nat(mine.totalPlaySeconds, 0), nat(theirs.totalPlaySeconds, 0));
@@ -1138,11 +1259,11 @@ function createGame() {
   }
 
   const game = createGame();
-  const SIZES = {"bg_canopy":[1280,720,640],"bg_meadow":[1280,720,640],"bg_pond":[1280,720,640],"bg_woods":[1280,720,640],"fx_heart":[180,157,90],"fx_star":[180,172,90],"hat_crown":[110,68,55],"hat_detective":[110,76,55],"hat_wreath":[110,97,55],"key":[1280,720,640],"labrador_cheer":[176,256,88],"labrador_idle":[151,248,75],"labrador_search":[204,248,102],"labrador_walk":[155,248,77],"portrait_labrador":[220,220,110],"portrait_skye":[220,220,110],"prop_abc_party":[180,91,90],"prop_bench":[220,135,110],"prop_bush":[180,140,90],"prop_letter_gem":[180,178,90],"prop_lily":[180,124,90],"prop_mushroom":[143,180,71],"prop_nest":[180,118,90],"prop_orb":[140,180,70],"prop_postcard":[180,142,90],"prop_rock":[180,150,90],"prop_stone":[220,152,110],"prop_stump":[180,141,90],"skye_cheer":[184,204,92],"skye_fly":[262,196,131],"skye_idle":[167,196,83],"story_open":[1280,720,640],"story_win":[1280,720,640],"ui_meet":[220,220,110],"word_a":[194,220,97],"word_b":[191,220,95],"word_c":[184,220,92],"word_d":[220,155,110],"word_e":[179,220,89],"word_f":[220,219,110],"word_g":[146,220,73],"word_h":[220,149,110],"word_i":[118,220,59],"word_j":[197,220,98],"word_k":[160,220,80],"word_l":[203,220,101],"word_m":[220,215,110],"word_n":[220,166,110],"word_o":[194,220,97],"word_p":[207,220,103],"word_q":[193,220,96],"word_r":[178,220,89],"word_s":[220,204,110],"word_t":[220,201,110],"word_u":[220,214,110],"word_v":[171,220,85],"word_w":[220,176,110],"word_x":[220,156,110],"word_y":[220,203,110],"word_z":[154,220,77]};
-  const ASSET_VERSION = "be0792bef113";
+  const SIZES = {"bg_canopy":[1280,720,640],"bg_meadow":[1280,720,640],"bg_pond":[1280,720,640],"bg_woods":[1280,720,640],"fx_heart":[180,157,90],"fx_star":[180,172,90],"hat_bow":[110,75,55],"hat_butterfly":[110,97,55],"hat_crown":[110,68,55],"hat_detective":[110,76,55],"hat_wreath":[110,97,55],"key":[1280,720,640],"labrador_cheer":[176,256,88],"labrador_idle":[151,248,75],"labrador_search":[204,248,102],"labrador_walk":[155,248,77],"portrait_labrador":[220,220,110],"portrait_skye":[220,220,110],"prop_abc_party":[180,91,90],"prop_bench":[220,135,110],"prop_bush":[180,140,90],"prop_letter_gem":[180,178,90],"prop_lily":[180,124,90],"prop_mushroom":[143,180,71],"prop_nest":[180,118,90],"prop_orb":[140,180,70],"prop_postcard":[180,142,90],"prop_rock":[180,150,90],"prop_stone":[220,152,110],"prop_stump":[180,141,90],"skye_cheer":[184,204,92],"skye_fly":[262,196,131],"skye_idle":[167,196,83],"story_open":[1280,720,640],"story_win":[1280,720,640],"ui_meet":[220,220,110],"word_a":[194,220,97],"word_b":[191,220,95],"word_c":[184,220,92],"word_d":[220,155,110],"word_e":[179,220,89],"word_f":[220,219,110],"word_g":[146,220,73],"word_h":[220,149,110],"word_i":[118,220,59],"word_j":[197,220,98],"word_k":[160,220,80],"word_l":[203,220,101],"word_m":[220,215,110],"word_n":[220,166,110],"word_o":[194,220,97],"word_p":[207,220,103],"word_q":[193,220,96],"word_r":[178,220,89],"word_s":[220,204,110],"word_t":[220,201,110],"word_u":[220,214,110],"word_v":[171,220,85],"word_w":[220,176,110],"word_x":[220,156,110],"word_y":[220,203,110],"word_z":[154,220,77]};
+  const ASSET_VERSION = "b6d3e7aede95";
   const assetURL = file => `game/${file}?v=${ASSET_VERSION}`;
 
-  const HD_NAMES = new Set(["bg_canopy","bg_meadow","bg_pond","bg_woods","fx_heart","fx_star","hat_crown","hat_detective","hat_wreath","key","labrador_cheer","labrador_cheer_d1","labrador_cheer_d2","labrador_idle","labrador_idle_d1","labrador_idle_d2","labrador_search","labrador_search_d1","labrador_search_d2","labrador_walk","labrador_walk_d1","labrador_walk_d2","portrait_labrador","portrait_skye","prop_abc_party","prop_bench","prop_bush","prop_letter_gem","prop_lily","prop_mushroom","prop_nest","prop_orb","prop_postcard","prop_rock","prop_stone","prop_stump","skye_cheer","skye_cheer_d1","skye_cheer_d2","skye_fly","skye_fly_d1","skye_fly_d2","skye_idle","skye_idle_d1","skye_idle_d2","story_open","story_win","word_a","word_b","word_c","word_d","word_e","word_f","word_g","word_h","word_i","word_j","word_k","word_l","word_m","word_n","word_o","word_p","word_q","word_r","word_s","word_t","word_u","word_v","word_w","word_x","word_y","word_z"]);
+  const HD_NAMES = new Set(["bg_canopy","bg_meadow","bg_pond","bg_woods","fx_heart","fx_star","hat_bow","hat_butterfly","hat_crown","hat_detective","hat_wreath","key","labrador_cheer","labrador_cheer_d1","labrador_cheer_d2","labrador_idle","labrador_idle_d1","labrador_idle_d2","labrador_search","labrador_search_d1","labrador_search_d2","labrador_walk","labrador_walk_d1","labrador_walk_d2","portrait_labrador","portrait_skye","prop_abc_party","prop_bench","prop_bush","prop_letter_gem","prop_lily","prop_mushroom","prop_nest","prop_orb","prop_postcard","prop_rock","prop_stone","prop_stump","skye_cheer","skye_cheer_d1","skye_cheer_d2","skye_fly","skye_fly_d1","skye_fly_d2","skye_idle","skye_idle_d1","skye_idle_d2","story_open","story_win","word_a","word_b","word_c","word_d","word_e","word_f","word_g","word_h","word_i","word_j","word_k","word_l","word_m","word_n","word_o","word_p","word_q","word_r","word_s","word_t","word_u","word_v","word_w","word_x","word_y","word_z"]);
   const HD_FROM = 1700;
   const hd = { on: false, ready: new Set(), asked: new Set(), live: new Set(), timer: 0 };
   const ART_PATIENCE = 1500;
@@ -1242,7 +1363,7 @@ function createGame() {
   }
 
   /** @type {{ lines?: Record<string, any>, pages?: Record<string, any>, voices?: any }} */
-  const LINES = {"voices":{"labrador":{"zh":["elevenlabs:X9smqJI1czUfUHFvbeQk","+0%","eleven_v4"]},"skye":{"zh":["elevenlabs:BT0SH7Hb8NRPpT5xbCgg","+0%","eleven_v4"],"en":["elevenlabs:BT0SH7Hb8NRPpT5xbCgg","-8%","eleven_v4"]}},"lines":{"p1":{"who":"skye","say":["哇，拉布拉多警长！一阵调皮的彩虹风，把森林里的二十六个发光字母宝石都吹躲起来啦！"],"art":"story_open"},"p2":{"who":"labrador","say":["别着急，天天！我拿着放大镜在树林里找，你在天上帮我看，我们一起陪宝贝集齐二十六个英文字母吧！"],"art":"story_open"},"p3":{"who":"skye","say":["太好啦！我先飞去阳光大树看看。出发喽，",{"en":"Hello!","zh":"你好！"}],"art":"key"},"ch_tree":{"who":"labrador","say":["第一站是阳光大树，这里藏着 A 到 D 四个字母宝贝，点一点它们就会亮起来哦！"],"art":"bg_woods"},"ch_pond":{"who":"labrador","say":["欢迎来到萤火池塘，莲叶和鹅卵石旁边住着字母 E、F、G、H！"],"art":"bg_pond"},"ch_meadow":{"who":"labrador","say":["花朵草地香香的，草丛和小蘑菇底下藏着 I、J、K、L 四个好朋友！"],"art":"bg_meadow"},"ch_hill":{"who":"labrador","say":["我们爬上软绵绵的松果山坡啦，快找找字母 M、N、O、P 吧！"],"art":"bg_meadow"},"ch_hollow":{"who":"labrador","say":["秘密树洞站到啦！这里有温柔的小公主和字母 Q、R、S、T 在等我们呢！"],"art":"bg_woods"},"ch_nest":{"who":"labrador","say":["飞上亮晶晶的树冠花园啦，小雨伞、小提琴和小鲸鱼带着 U、V、W 来做客！"],"art":"bg_canopy"},"ch_creek":{"who":"labrador","say":["来到清澈的叮咚小溪，最后的字母伙伴 X、Y、Z 就藏在水花和斑马草丛边！"],"art":"bg_pond"},"ch_camp":{"who":"labrador","say":["最后一站星星树屋狂欢！点一点彩虹墙上的任意字母，都能听到它的声音哦！"],"art":"bg_canopy"},"case_tree":{"who":"labrador","say":["第一关任务：点一点发光的树桩、花丛和蘑菇，找出 A 到 D 四个字母宝石！"],"art":"bg_woods"},"case_pond":{"who":"labrador","say":["点一点荷叶和石头，帮池塘里的小伙伴找回 E 到 H！"],"art":"bg_pond"},"case_meadow":{"who":"labrador","say":["粉扑扑的花朵草地上藏着好玩的礼物，我们一起找出 I 到 L 吧！"],"art":"bg_meadow"},"case_hill":{"who":"labrador","say":["抬头望一望，月亮、鸟窝、猫头鹰和小猪在等着，去找 M 到 P 吧！"],"art":"bg_meadow"},"case_hollow":{"who":"labrador","say":["轻手轻脚点一点树洞和草丛，小公主、小兔、太阳和大树拿着 Q 到 T 呢！"],"art":"bg_woods"},"case_nest":{"who":"labrador","say":["点一点树梢边的彩蛋鸟窝和花丛，收集最后的字母 U、V、W 吧！"],"art":"bg_canopy"},"case_creek":{"who":"labrador","say":["马上就能认识全部二十六个字母啦！点一点水边的 X、Y、Z 宝石吧！"],"art":"bg_pond"},"case_camp":{"who":"labrador","say":["二十六个字母大团圆！再找到这四颗压轴字母星，今晚森林舞会就能开幕啦！"],"art":"bg_canopy"},"clear_tree":{"who":"labrador","say":["太厉害了！A 到 D 四个字母宝石全部点亮，小金星送给你！"],"art":"bg_woods"},"clear_pond":{"who":"labrador","say":["掌声送给自己！E 到 H 全部收进警长笔记本，真棒！"],"art":"bg_pond"},"clear_meadow":{"who":"labrador","say":["花朵草地的 I 到 L 都认出来啦，越来越熟练了！"],"art":"bg_meadow"},"clear_hill":{"who":"labrador","say":["松果山坡 M 到 P 大获全胜，警长给你敬个礼！"],"art":"bg_meadow"},"clear_hollow":{"who":"labrador","say":["树洞里的小公主 Q 到 T 都找到好朋友啦！"],"art":"bg_woods"},"clear_nest":{"who":"labrador","say":["树冠花园的 U、V、W 也集齐了，就差最后一小步啦！"],"art":"bg_canopy"},"clear_creek":{"who":"labrador","say":["恭喜收集 X、Y、Z！二十六个英文字母全认识啦，准备参加星光晚会吧！"],"art":"bg_pond"},"clear_camp":{"who":"labrador","say":["大案圆满破获！二十六个英文字母全部回家，你是森林里最闪亮的小侦探！"],"art":"bg_canopy"},"win":{"who":"labrador","say":["哇，所有的小动物和二十六个英文字母都挂上了灯笼！宝贝小侦探，你真的太棒啦！"],"art":"story_win"},"end":{"who":"skye","say":["下次再来森林和小动物、还有拉布拉多警长一起玩字母游戏吧，",{"en":"Yay!","zh":"太棒了！"}],"art":"story_win"},"mem_m1":{"who":"labrador","say":["发现秘密明信片！画着阳光大树下红苹果、小熊、小猫和小鸭一起晒太阳呢！"],"art":"bg_woods"},"mem_m2":{"who":"labrador","say":["找到池塘明信片！长颈鹿、小青蛙和漂亮草帽正在水边吹泡泡！"],"art":"bg_pond"},"mem_m3":{"who":"labrador","say":["找到草地明信片！冰淇淋、草莓酱和彩虹风筝飘在蓝天里，太甜了！"],"art":"bg_meadow"},"mem_m4":{"who":"labrador","say":["发现山坡明信片！弯弯的月亮照着鸟窝、小猫头鹰和粉红小猪呢！"],"art":"bg_meadow"},"mem_m5":{"who":"labrador","say":["找到树洞明信片！戴王冠的小公主和小白兔在太阳底下跳舞！"],"art":"bg_woods"},"mem_m6":{"who":"labrador","say":["发现树冠明信片！雨伞、小提琴和小鲸鱼一起奏响森林音乐！"],"art":"bg_canopy"},"mem_m7":{"who":"labrador","say":["找到小溪明信片！彩虹木琴、星星溜溜球和小斑马玩得好开心！"],"art":"bg_pond"},"mem_m8":{"who":"labrador","say":["找到最珍贵的星光纪念明信片！二十六个好朋友大合影真温暖！"],"art":"bg_canopy"},"me_labrador":{"who":"labrador","say":["你好呀小宝贝！我是安全警长拉布拉多，今天我陪你一步一步轻松学完二十六个英文字母！"],"art":"key"},"me_skye":{"who":"skye","say":["嗨小可爱，我是会飞的小狗狗天天！",{"en":"Hello!","zh":"你好！"},"点哪张字母我都立刻大声读给你听！"]},"screen2_letter":{"who":"labrador","say":["字母宝石集齐啦，我们去温柔的字母工坊点一点认识它们吧！"]},"tutor_tap":{"who":"labrador","say":["手指点一点发光的小树桩、小花和蘑菇，就能发现神秘字母啦！"]},"tutor_phonics":{"who":"labrador","say":["欢迎来到字母工坊！仔细听天天念的是哪个字母，再点下面对应的大字母方块就行啦，可以点上面小喇叭再听一次哦！"]},"tutor_fullscreen":{"who":"labrador","say":["把平板画面点大一点，字母看得更清楚哟！"]},"stone_assist":{"who":"labrador","say":["小眼睛看看上面闪烁发亮的那张字母卡，点它就对啦！"]},"stone_try_1":{"who":"labrador","say":["差一点点哦，仔细听听上面的声音，再试一次吧！"]},"stone_try_2":{"who":"labrador","say":["没关系，点一下上面带小喇叭的白色卡片就能再听一遍哦！"]},"stone_try_3":{"who":"labrador","say":["再看看哪个字母和刚刚念的一样呢，慢慢挑没关系！"]},"quiz_right_1":{"who":"skye","say":["太聪明啦！一下就认出来啦！"]},"quiz_right_2":{"who":"skye","say":[{"en":"Good job!","zh":"做得好！"},"完全答对啦！"]},"quiz_right_3":{"who":"skye","say":[{"en":"Yay!","zh":"太棒了！"},"宝贝耳朵真灵，一听就准！"]},"quiz_wrong_1":{"who":"labrador","say":["再仔细听一听是哪个字母呀，点它就亮啦！"]},"quiz_wrong_2":{"who":"labrador","say":["不怕不怕，看看图片里的小宝贝再试一张吧！"]},"quiz_wrong_3":{"who":"labrador","say":["再猜一次一定能找到，加油小侦探！"]},"clue_1":{"who":"labrador","say":["耶，找到一颗闪闪发光的森林小星星！"]},"clue_2":{"who":"labrador","say":["好可爱呀，又收集到一颗金星果！"]},"clue_3":{"who":"labrador","say":["眼力真棒，这个隐藏小礼物也被你发现啦！"]},"clue_4":{"who":"labrador","say":["星光越来越亮了，森林真感谢你！"]},"idle_1":{"who":"labrador","say":["小手点一点屏幕里亮晶晶发光的地方，看看有什么惊喜吧！"]},"idle_2":{"who":"labrador","say":["警长的放大镜提示亮起来啦，点那个发光的圆圈就对喽！"]},"idle_3":{"who":"labrador","say":["跟着暖暖的光圈点过去，小字母正等着和你做朋友呢！"]},"idle_4":{"who":"labrador","say":["不知道该点哪里时，可以随时点右上角那颗小星星提示哦！"]},"cheer_1":{"who":"skye","say":[{"en":"Yay!","zh":"太棒了！"},"和宝贝小侦探一起寻宝最开心啦！"]},"cheer_2":{"who":"skye","say":[{"en":"Good job!","zh":"做得好！"},"给你一个大大的甜甜抱抱！"]},"cheer_3":{"who":"skye","say":["嘿嘿，拉布拉多警长一直守在我们身边呢！"]},"cheer_4":{"who":"skye","say":[{"en":"Hello!","zh":"你好！"},"今天也要开开心心玩字母哦！"]},"ui_play":{"who":"labrador","say":["点大金色按钮，开始森林字母探案吧！"]},"ui_continue":{"who":"labrador","say":["继续接着玩，解锁更多字母伙伴！"]},"ui_next":{"who":"labrador","say":["准备好了，我们去下一关吧！"]},"ui_replay":{"who":"labrador","say":["再来玩一遍这一关，越认越熟！"]},"ui_back":{"who":"labrador","say":["回到游戏首页地图。"]},"ui_words":{"who":"labrador","say":["翻开二十六个字母可爱图鉴，点谁就读谁！"]},"ui_stickers":{"who":"labrador","say":["来到秘密贴纸树屋，把字母小动物贴在黑板上吧！"]},"ui_wardrobe":{"who":"labrador","say":["给天天和警长挑一套漂亮的小衣服和帽子吧！"]},"ui_settings":{"who":"labrador","say":["按住不松开一会儿，可以打开家长小助手。"]},"ui_hint":{"who":"labrador","say":["亮亮小星星提示！点闪光的地方就行啦！"]},"ui_fullscreen":{"who":"labrador","say":["放大到全屏画面！"]},"ui_sound":{"who":"labrador","say":["点上面白色小喇叭牌，再听一次字母声音！"]},"ui_quiz_skip":{"who":"labrador","say":["可以直接跳到下一个小环节哦。"]},"ui_meet":{"who":"labrador","say":["快来认识天天和警长，还能换漂亮装扮呢！"]},"ui_rooms":{"who":"labrador","say":["选一个森林章节进去找字母吧！"]},"ui_room_tree":{"who":"labrador","say":["第一关：阳光大树 A 到 D"]},"ui_room_pond":{"who":"labrador","say":["第二关：萤火池塘 E 到 H"]},"ui_room_meadow":{"who":"labrador","say":["第三关：花朵草地 I 到 L"]},"ui_room_hill":{"who":"labrador","say":["第四关：松果山坡 M 到 P"]},"ui_room_hollow":{"who":"labrador","say":["第五关：秘密树洞 Q 到 T"]},"ui_room_nest":{"who":"labrador","say":["第六关：树冠花园 U 到 W"]},"ui_room_creek":{"who":"labrador","say":["第七关：叮咚小溪 X 到 Z"]},"ui_room_camp":{"who":"labrador","say":["第八关：星光树屋 A 到 Z 狂欢"]},"ph_a":{"who":"skye","say":["Letter A!"]},"learn_a":{"who":"skye","say":["看呀，这是字母 ",{"w":"a"},"，",{"w":"a"}," 是苹果！跟我念 ",{"w":"a"},"！"]},"spot_a":{"who":"skye","say":["找到啦！",{"w":"a"},"，苹果 ",{"w":"a"},"！"]},"blend_a":{"who":"skye","say":["太棒了！",{"w":"a"},"，",{"en":"A is for apple! Yay!","zh":"就是苹果，太棒啦！"}," ",{"w":"a"},"！"]},"quiz_a":{"who":"skye","say":["请找找哪个是 ",{"w":"a"}," 呀？"]},"recall_a":{"who":"skye","say":["还记得字母 ",{"w":"a"}," 吗？",{"w":"a"},"，就是苹果！"]},"ph_b":{"who":"skye","say":["Letter B!"]},"learn_b":{"who":"skye","say":["看呀，这是字母 ",{"w":"b"},"，",{"w":"b"}," 是小熊！跟我念 ",{"w":"b"},"！"]},"spot_b":{"who":"skye","say":["找到啦！",{"w":"b"},"，小熊 ",{"w":"b"},"！"]},"blend_b":{"who":"skye","say":["太棒了！",{"w":"b"},"，",{"en":"B is for bear! Yay!","zh":"就是小熊，太棒啦！"}," ",{"w":"b"},"！"]},"quiz_b":{"who":"skye","say":["请找找哪个是 ",{"w":"b"}," 呀？"]},"recall_b":{"who":"skye","say":["还记得字母 ",{"w":"b"}," 吗？",{"w":"b"},"，就是小熊！"]},"ph_c":{"who":"skye","say":["Letter C!"]},"learn_c":{"who":"skye","say":["看呀，这是字母 ",{"w":"c"},"，",{"w":"c"}," 是小猫！跟我念 ",{"w":"c"},"！"]},"spot_c":{"who":"skye","say":["找到啦！",{"w":"c"},"，小猫 ",{"w":"c"},"！"]},"blend_c":{"who":"skye","say":["太棒了！",{"w":"c"},"，",{"en":"C is for cat! Yay!","zh":"就是小猫，太棒啦！"}," ",{"w":"c"},"！"]},"quiz_c":{"who":"skye","say":["请找找哪个是 ",{"w":"c"}," 呀？"]},"recall_c":{"who":"skye","say":["还记得字母 ",{"w":"c"}," 吗？",{"w":"c"},"，就是小猫！"]},"ph_d":{"who":"skye","say":["Letter D!"]},"learn_d":{"who":"skye","say":["看呀，这是字母 ",{"w":"d"},"，",{"w":"d"}," 是小鸭！跟我念 ",{"w":"d"},"！"]},"spot_d":{"who":"skye","say":["找到啦！",{"w":"d"},"，小鸭 ",{"w":"d"},"！"]},"blend_d":{"who":"skye","say":["太棒了！",{"w":"d"},"，",{"en":"D is for duck! Yay!","zh":"就是小鸭，太棒啦！"}," ",{"w":"d"},"！"]},"quiz_d":{"who":"skye","say":["请找找哪个是 ",{"w":"d"}," 呀？"]},"recall_d":{"who":"skye","say":["还记得字母 ",{"w":"d"}," 吗？",{"w":"d"},"，就是小鸭！"]},"ph_e":{"who":"skye","say":["Letter E!"]},"learn_e":{"who":"skye","say":["看呀，这是字母 ",{"w":"e"},"，",{"w":"e"}," 是彩蛋！跟我念 ",{"w":"e"},"！"]},"spot_e":{"who":"skye","say":["找到啦！",{"w":"e"},"，彩蛋 ",{"w":"e"},"！"]},"blend_e":{"who":"skye","say":["太棒了！",{"w":"e"},"，",{"en":"E is for egg! Yay!","zh":"就是彩蛋，太棒啦！"}," ",{"w":"e"},"！"]},"quiz_e":{"who":"skye","say":["请找找哪个是 ",{"w":"e"}," 呀？"]},"recall_e":{"who":"skye","say":["还记得字母 ",{"w":"e"}," 吗？",{"w":"e"},"，就是彩蛋！"]},"ph_f":{"who":"skye","say":["Letter F!"]},"learn_f":{"who":"skye","say":["看呀，这是字母 ",{"w":"f"},"，",{"w":"f"}," 是小青蛙！跟我念 ",{"w":"f"},"！"]},"spot_f":{"who":"skye","say":["找到啦！",{"w":"f"},"，小青蛙 ",{"w":"f"},"！"]},"blend_f":{"who":"skye","say":["太棒了！",{"w":"f"},"，",{"en":"F is for frog! Yay!","zh":"就是小青蛙，太棒啦！"}," ",{"w":"f"},"！"]},"quiz_f":{"who":"skye","say":["请找找哪个是 ",{"w":"f"}," 呀？"]},"recall_f":{"who":"skye","say":["还记得字母 ",{"w":"f"}," 吗？",{"w":"f"},"，就是小青蛙！"]},"ph_g":{"who":"skye","say":["Letter G!"]},"learn_g":{"who":"skye","say":["看呀，这是字母 ",{"w":"g"},"，",{"w":"g"}," 是长颈鹿！跟我念 ",{"w":"g"},"！"]},"spot_g":{"who":"skye","say":["找到啦！",{"w":"g"},"，长颈鹿 ",{"w":"g"},"！"]},"blend_g":{"who":"skye","say":["太棒了！",{"w":"g"},"，",{"en":"G is for giraffe! Yay!","zh":"就是长颈鹿，太棒啦！"}," ",{"w":"g"},"！"]},"quiz_g":{"who":"skye","say":["请找找哪个是 ",{"w":"g"}," 呀？"]},"recall_g":{"who":"skye","say":["还记得字母 ",{"w":"g"}," 吗？",{"w":"g"},"，就是长颈鹿！"]},"ph_h":{"who":"skye","say":["Letter H!"]},"learn_h":{"who":"skye","say":["看呀，这是字母 ",{"w":"h"},"，",{"w":"h"}," 是草帽！跟我念 ",{"w":"h"},"！"]},"spot_h":{"who":"skye","say":["找到啦！",{"w":"h"},"，草帽 ",{"w":"h"},"！"]},"blend_h":{"who":"skye","say":["太棒了！",{"w":"h"},"，",{"en":"H is for hat! Yay!","zh":"就是草帽，太棒啦！"}," ",{"w":"h"},"！"]},"quiz_h":{"who":"skye","say":["请找找哪个是 ",{"w":"h"}," 呀？"]},"recall_h":{"who":"skye","say":["还记得字母 ",{"w":"h"}," 吗？",{"w":"h"},"，就是草帽！"]},"ph_i":{"who":"skye","say":["Letter I!"]},"learn_i":{"who":"skye","say":["看呀，这是字母 ",{"w":"i"},"，",{"w":"i"}," 是冰淇淋！跟我念 ",{"w":"i"},"！"]},"spot_i":{"who":"skye","say":["找到啦！",{"w":"i"},"，冰淇淋 ",{"w":"i"},"！"]},"blend_i":{"who":"skye","say":["太棒了！",{"w":"i"},"，",{"en":"I is for ice cream! Yay!","zh":"就是冰淇淋，太棒啦！"}," ",{"w":"i"},"！"]},"quiz_i":{"who":"skye","say":["请找找哪个是 ",{"w":"i"}," 呀？"]},"recall_i":{"who":"skye","say":["还记得字母 ",{"w":"i"}," 吗？",{"w":"i"},"，就是冰淇淋！"]},"ph_j":{"who":"skye","say":["Letter J!"]},"learn_j":{"who":"skye","say":["看呀，这是字母 ",{"w":"j"},"，",{"w":"j"}," 是草莓酱！跟我念 ",{"w":"j"},"！"]},"spot_j":{"who":"skye","say":["找到啦！",{"w":"j"},"，草莓酱 ",{"w":"j"},"！"]},"blend_j":{"who":"skye","say":["太棒了！",{"w":"j"},"，",{"en":"J is for jam! Yay!","zh":"就是草莓酱，太棒啦！"}," ",{"w":"j"},"！"]},"quiz_j":{"who":"skye","say":["请找找哪个是 ",{"w":"j"}," 呀？"]},"recall_j":{"who":"skye","say":["还记得字母 ",{"w":"j"}," 吗？",{"w":"j"},"，就是草莓酱！"]},"ph_k":{"who":"skye","say":["Letter K!"]},"learn_k":{"who":"skye","say":["看呀，这是字母 ",{"w":"k"},"，",{"w":"k"}," 是风筝！跟我念 ",{"w":"k"},"！"]},"spot_k":{"who":"skye","say":["找到啦！",{"w":"k"},"，风筝 ",{"w":"k"},"！"]},"blend_k":{"who":"skye","say":["太棒了！",{"w":"k"},"，",{"en":"K is for kite! Yay!","zh":"就是风筝，太棒啦！"}," ",{"w":"k"},"！"]},"quiz_k":{"who":"skye","say":["请找找哪个是 ",{"w":"k"}," 呀？"]},"recall_k":{"who":"skye","say":["还记得字母 ",{"w":"k"}," 吗？",{"w":"k"},"，就是风筝！"]},"ph_l":{"who":"skye","say":["Letter L!"]},"learn_l":{"who":"skye","say":["看呀，这是字母 ",{"w":"l"},"，",{"w":"l"}," 是小狮子！跟我念 ",{"w":"l"},"！"]},"spot_l":{"who":"skye","say":["找到啦！",{"w":"l"},"，小狮子 ",{"w":"l"},"！"]},"blend_l":{"who":"skye","say":["太棒了！",{"w":"l"},"，",{"en":"L is for lion! Yay!","zh":"就是小狮子，太棒啦！"}," ",{"w":"l"},"！"]},"quiz_l":{"who":"skye","say":["请找找哪个是 ",{"w":"l"}," 呀？"]},"recall_l":{"who":"skye","say":["还记得字母 ",{"w":"l"}," 吗？",{"w":"l"},"，就是小狮子！"]},"ph_m":{"who":"skye","say":["Letter M!"]},"learn_m":{"who":"skye","say":["看呀，这是字母 ",{"w":"m"},"，",{"w":"m"}," 是月亮！跟我念 ",{"w":"m"},"！"]},"spot_m":{"who":"skye","say":["找到啦！",{"w":"m"},"，月亮 ",{"w":"m"},"！"]},"blend_m":{"who":"skye","say":["太棒了！",{"w":"m"},"，",{"en":"M is for moon! Yay!","zh":"就是月亮，太棒啦！"}," ",{"w":"m"},"！"]},"quiz_m":{"who":"skye","say":["请找找哪个是 ",{"w":"m"}," 呀？"]},"recall_m":{"who":"skye","say":["还记得字母 ",{"w":"m"}," 吗？",{"w":"m"},"，就是月亮！"]},"ph_n":{"who":"skye","say":["Letter N!"]},"learn_n":{"who":"skye","say":["看呀，这是字母 ",{"w":"n"},"，",{"w":"n"}," 是鸟窝！跟我念 ",{"w":"n"},"！"]},"spot_n":{"who":"skye","say":["找到啦！",{"w":"n"},"，鸟窝 ",{"w":"n"},"！"]},"blend_n":{"who":"skye","say":["太棒了！",{"w":"n"},"，",{"en":"N is for nest! Yay!","zh":"就是鸟窝，太棒啦！"}," ",{"w":"n"},"！"]},"quiz_n":{"who":"skye","say":["请找找哪个是 ",{"w":"n"}," 呀？"]},"recall_n":{"who":"skye","say":["还记得字母 ",{"w":"n"}," 吗？",{"w":"n"},"，就是鸟窝！"]},"ph_o":{"who":"skye","say":["Letter O!"]},"learn_o":{"who":"skye","say":["看呀，这是字母 ",{"w":"o"},"，",{"w":"o"}," 是猫头鹰！跟我念 ",{"w":"o"},"！"]},"spot_o":{"who":"skye","say":["找到啦！",{"w":"o"},"，猫头鹰 ",{"w":"o"},"！"]},"blend_o":{"who":"skye","say":["太棒了！",{"w":"o"},"，",{"en":"O is for owl! Yay!","zh":"就是猫头鹰，太棒啦！"}," ",{"w":"o"},"！"]},"quiz_o":{"who":"skye","say":["请找找哪个是 ",{"w":"o"}," 呀？"]},"recall_o":{"who":"skye","say":["还记得字母 ",{"w":"o"}," 吗？",{"w":"o"},"，就是猫头鹰！"]},"ph_p":{"who":"skye","say":["Letter P!"]},"learn_p":{"who":"skye","say":["看呀，这是字母 ",{"w":"p"},"，",{"w":"p"}," 是小猪！跟我念 ",{"w":"p"},"！"]},"spot_p":{"who":"skye","say":["找到啦！",{"w":"p"},"，小猪 ",{"w":"p"},"！"]},"blend_p":{"who":"skye","say":["太棒了！",{"w":"p"},"，",{"en":"P is for pig! Yay!","zh":"就是小猪，太棒啦！"}," ",{"w":"p"},"！"]},"quiz_p":{"who":"skye","say":["请找找哪个是 ",{"w":"p"}," 呀？"]},"recall_p":{"who":"skye","say":["还记得字母 ",{"w":"p"}," 吗？",{"w":"p"},"，就是小猪！"]},"ph_q":{"who":"skye","say":["Letter Q!"]},"learn_q":{"who":"skye","say":["看呀，这是字母 ",{"w":"q"},"，",{"w":"q"}," 是小公主！跟我念 ",{"w":"q"},"！"]},"spot_q":{"who":"skye","say":["找到啦！",{"w":"q"},"，小公主 ",{"w":"q"},"！"]},"blend_q":{"who":"skye","say":["太棒了！",{"w":"q"},"，",{"en":"Q is for queen! Yay!","zh":"就是小公主，太棒啦！"}," ",{"w":"q"},"！"]},"quiz_q":{"who":"skye","say":["请找找哪个是 ",{"w":"q"}," 呀？"]},"recall_q":{"who":"skye","say":["还记得字母 ",{"w":"q"}," 吗？",{"w":"q"},"，就是小公主！"]},"ph_r":{"who":"skye","say":["Letter R!"]},"learn_r":{"who":"skye","say":["看呀，这是字母 ",{"w":"r"},"，",{"w":"r"}," 是小白兔！跟我念 ",{"w":"r"},"！"]},"spot_r":{"who":"skye","say":["找到啦！",{"w":"r"},"，小白兔 ",{"w":"r"},"！"]},"blend_r":{"who":"skye","say":["太棒了！",{"w":"r"},"，",{"en":"R is for rabbit! Yay!","zh":"就是小白兔，太棒啦！"}," ",{"w":"r"},"！"]},"quiz_r":{"who":"skye","say":["请找找哪个是 ",{"w":"r"}," 呀？"]},"recall_r":{"who":"skye","say":["还记得字母 ",{"w":"r"}," 吗？",{"w":"r"},"，就是小白兔！"]},"ph_s":{"who":"skye","say":["Letter S!"]},"learn_s":{"who":"skye","say":["看呀，这是字母 ",{"w":"s"},"，",{"w":"s"}," 是太阳！跟我念 ",{"w":"s"},"！"]},"spot_s":{"who":"skye","say":["找到啦！",{"w":"s"},"，太阳 ",{"w":"s"},"！"]},"blend_s":{"who":"skye","say":["太棒了！",{"w":"s"},"，",{"en":"S is for sun! Yay!","zh":"就是太阳，太棒啦！"}," ",{"w":"s"},"！"]},"quiz_s":{"who":"skye","say":["请找找哪个是 ",{"w":"s"}," 呀？"]},"recall_s":{"who":"skye","say":["还记得字母 ",{"w":"s"}," 吗？",{"w":"s"},"，就是太阳！"]},"ph_t":{"who":"skye","say":["Letter T!"]},"learn_t":{"who":"skye","say":["看呀，这是字母 ",{"w":"t"},"，",{"w":"t"}," 是大树！跟我念 ",{"w":"t"},"！"]},"spot_t":{"who":"skye","say":["找到啦！",{"w":"t"},"，大树 ",{"w":"t"},"！"]},"blend_t":{"who":"skye","say":["太棒了！",{"w":"t"},"，",{"en":"T is for tree! Yay!","zh":"就是大树，太棒啦！"}," ",{"w":"t"},"！"]},"quiz_t":{"who":"skye","say":["请找找哪个是 ",{"w":"t"}," 呀？"]},"recall_t":{"who":"skye","say":["还记得字母 ",{"w":"t"}," 吗？",{"w":"t"},"，就是大树！"]},"ph_u":{"who":"skye","say":["Letter U!"]},"learn_u":{"who":"skye","say":["看呀，这是字母 ",{"w":"u"},"，",{"w":"u"}," 是彩虹伞！跟我念 ",{"w":"u"},"！"]},"spot_u":{"who":"skye","say":["找到啦！",{"w":"u"},"，彩虹伞 ",{"w":"u"},"！"]},"blend_u":{"who":"skye","say":["太棒了！",{"w":"u"},"，",{"en":"U is for umbrella! Yay!","zh":"就是彩虹伞，太棒啦！"}," ",{"w":"u"},"！"]},"quiz_u":{"who":"skye","say":["请找找哪个是 ",{"w":"u"}," 呀？"]},"recall_u":{"who":"skye","say":["还记得字母 ",{"w":"u"}," 吗？",{"w":"u"},"，就是彩虹伞！"]},"ph_v":{"who":"skye","say":["Letter V!"]},"learn_v":{"who":"skye","say":["看呀，这是字母 ",{"w":"v"},"，",{"w":"v"}," 是小提琴！跟我念 ",{"w":"v"},"！"]},"spot_v":{"who":"skye","say":["找到啦！",{"w":"v"},"，小提琴 ",{"w":"v"},"！"]},"blend_v":{"who":"skye","say":["太棒了！",{"w":"v"},"，",{"en":"V is for violin! Yay!","zh":"就是小提琴，太棒啦！"}," ",{"w":"v"},"！"]},"quiz_v":{"who":"skye","say":["请找找哪个是 ",{"w":"v"}," 呀？"]},"recall_v":{"who":"skye","say":["还记得字母 ",{"w":"v"}," 吗？",{"w":"v"},"，就是小提琴！"]},"ph_w":{"who":"skye","say":["Letter W!"]},"learn_w":{"who":"skye","say":["看呀，这是字母 ",{"w":"w"},"，",{"w":"w"}," 是小鲸鱼！跟我念 ",{"w":"w"},"！"]},"spot_w":{"who":"skye","say":["找到啦！",{"w":"w"},"，小鲸鱼 ",{"w":"w"},"！"]},"blend_w":{"who":"skye","say":["太棒了！",{"w":"w"},"，",{"en":"W is for whale! Yay!","zh":"就是小鲸鱼，太棒啦！"}," ",{"w":"w"},"！"]},"quiz_w":{"who":"skye","say":["请找找哪个是 ",{"w":"w"}," 呀？"]},"recall_w":{"who":"skye","say":["还记得字母 ",{"w":"w"}," 吗？",{"w":"w"},"，就是小鲸鱼！"]},"ph_x":{"who":"skye","say":["Letter X!"]},"learn_x":{"who":"skye","say":["看呀，这是字母 ",{"w":"x"},"，",{"w":"x"}," 是彩虹木琴！跟我念 ",{"w":"x"},"！"]},"spot_x":{"who":"skye","say":["找到啦！",{"w":"x"},"，彩虹木琴 ",{"w":"x"},"！"]},"blend_x":{"who":"skye","say":["太棒了！",{"w":"x"},"，",{"en":"X is for xylophone! Yay!","zh":"就是彩虹木琴，太棒啦！"}," ",{"w":"x"},"！"]},"quiz_x":{"who":"skye","say":["请找找哪个是 ",{"w":"x"}," 呀？"]},"recall_x":{"who":"skye","say":["还记得字母 ",{"w":"x"}," 吗？",{"w":"x"},"，就是彩虹木琴！"]},"ph_y":{"who":"skye","say":["Letter Y!"]},"learn_y":{"who":"skye","say":["看呀，这是字母 ",{"w":"y"},"，",{"w":"y"}," 是溜溜球！跟我念 ",{"w":"y"},"！"]},"spot_y":{"who":"skye","say":["找到啦！",{"w":"y"},"，溜溜球 ",{"w":"y"},"！"]},"blend_y":{"who":"skye","say":["太棒了！",{"w":"y"},"，",{"en":"Y is for yo-yo! Yay!","zh":"就是溜溜球，太棒啦！"}," ",{"w":"y"},"！"]},"quiz_y":{"who":"skye","say":["请找找哪个是 ",{"w":"y"}," 呀？"]},"recall_y":{"who":"skye","say":["还记得字母 ",{"w":"y"}," 吗？",{"w":"y"},"，就是溜溜球！"]},"ph_z":{"who":"skye","say":["Letter Z!"]},"learn_z":{"who":"skye","say":["看呀，这是字母 ",{"w":"z"},"，",{"w":"z"}," 是小斑马！跟我念 ",{"w":"z"},"！"]},"spot_z":{"who":"skye","say":["找到啦！",{"w":"z"},"，小斑马 ",{"w":"z"},"！"]},"blend_z":{"who":"skye","say":["太棒了！",{"w":"z"},"，",{"en":"Z is for zebra! Yay!","zh":"就是小斑马，太棒啦！"}," ",{"w":"z"},"！"]},"quiz_z":{"who":"skye","say":["请找找哪个是 ",{"w":"z"}," 呀？"]},"recall_z":{"who":"skye","say":["还记得字母 ",{"w":"z"}," 吗？",{"w":"z"},"，就是小斑马！"]}}};
+  const LINES = {"voices":{"labrador":{"zh":["elevenlabs:X9smqJI1czUfUHFvbeQk","+0%","eleven_v4"]},"skye":{"zh":["elevenlabs:BT0SH7Hb8NRPpT5xbCgg","+0%","eleven_v4"],"en":["elevenlabs:BT0SH7Hb8NRPpT5xbCgg","-8%","eleven_v4"]}},"lines":{"p1":{"who":"skye","say":["哇，拉布拉多警长！一阵调皮的彩虹风，把森林里的二十六个发光字母宝石都吹躲起来啦！"],"art":"story_open"},"p2":{"who":"labrador","say":["别着急，天天！我拿着放大镜在树林里找，你在天上帮我看，我们一起陪宝贝集齐二十六个英文字母吧！"],"art":"story_open"},"p3":{"who":"skye","say":["太好啦！我先飞去阳光大树看看。出发喽，",{"en":"Hello!","zh":"你好！"}],"art":"key"},"ch_tree":{"who":"labrador","say":["第一站是阳光大树，这里藏着 A 到 D 四个字母宝贝，点一点它们就会亮起来哦！"],"art":"bg_woods"},"ch_pond":{"who":"labrador","say":["欢迎来到萤火池塘，莲叶和鹅卵石旁边住着字母 E、F、G、H！"],"art":"bg_pond"},"ch_meadow":{"who":"labrador","say":["花朵草地香香的，草丛和小蘑菇底下藏着 I、J、K、L 四个好朋友！"],"art":"bg_meadow"},"ch_hill":{"who":"labrador","say":["我们爬上软绵绵的松果山坡啦，快找找字母 M、N、O、P 吧！"],"art":"bg_meadow"},"ch_hollow":{"who":"labrador","say":["秘密树洞站到啦！这里有温柔的小公主和字母 Q、R、S、T 在等我们呢！"],"art":"bg_woods"},"ch_nest":{"who":"labrador","say":["飞上亮晶晶的树冠花园啦，小雨伞、小提琴和小鲸鱼带着 U、V、W 来做客！"],"art":"bg_canopy"},"ch_creek":{"who":"labrador","say":["来到清澈的叮咚小溪，最后的字母伙伴 X、Y、Z 就藏在水花和斑马草丛边！"],"art":"bg_pond"},"ch_camp":{"who":"labrador","say":["最后一站星星树屋狂欢！点一点彩虹墙上的任意字母，都能听到它的声音哦！"],"art":"bg_canopy"},"case_tree":{"who":"labrador","say":["第一关任务：点一点发光的树桩、花丛和蘑菇，找出 A 到 D 四个字母宝石！"],"art":"bg_woods"},"case_pond":{"who":"labrador","say":["点一点荷叶和石头，帮池塘里的小伙伴找回 E 到 H！"],"art":"bg_pond"},"case_meadow":{"who":"labrador","say":["粉扑扑的花朵草地上藏着好玩的礼物，我们一起找出 I 到 L 吧！"],"art":"bg_meadow"},"case_hill":{"who":"labrador","say":["抬头望一望，月亮、鸟窝、猫头鹰和小猪在等着，去找 M 到 P 吧！"],"art":"bg_meadow"},"case_hollow":{"who":"labrador","say":["轻手轻脚点一点树洞和草丛，小公主、小兔、太阳和大树拿着 Q 到 T 呢！"],"art":"bg_woods"},"case_nest":{"who":"labrador","say":["点一点树梢边的彩蛋鸟窝和花丛，收集最后的字母 U、V、W 吧！"],"art":"bg_canopy"},"case_creek":{"who":"labrador","say":["马上就能认识全部二十六个字母啦！点一点水边的 X、Y、Z 宝石吧！"],"art":"bg_pond"},"case_camp":{"who":"labrador","say":["二十六个字母大团圆！再找到这四颗压轴字母星，今晚森林舞会就能开幕啦！"],"art":"bg_canopy"},"clear_tree":{"who":"labrador","say":["太厉害了！A 到 D 四个字母宝石全部点亮，小金星送给你！"],"art":"bg_woods"},"clear_pond":{"who":"labrador","say":["掌声送给自己！E 到 H 全部收进警长笔记本，真棒！"],"art":"bg_pond"},"clear_meadow":{"who":"labrador","say":["花朵草地的 I 到 L 都认出来啦，越来越熟练了！"],"art":"bg_meadow"},"clear_hill":{"who":"labrador","say":["松果山坡 M 到 P 大获全胜，警长给你敬个礼！"],"art":"bg_meadow"},"clear_hollow":{"who":"labrador","say":["树洞里的小公主 Q 到 T 都找到好朋友啦！"],"art":"bg_woods"},"clear_nest":{"who":"labrador","say":["树冠花园的 U、V、W 也集齐了，就差最后一小步啦！"],"art":"bg_canopy"},"clear_creek":{"who":"labrador","say":["恭喜收集 X、Y、Z！二十六个英文字母全认识啦，准备参加星光晚会吧！"],"art":"bg_pond"},"clear_camp":{"who":"labrador","say":["大案圆满破获！二十六个英文字母全部回家，你是森林里最闪亮的小侦探！"],"art":"bg_canopy"},"win":{"who":"labrador","say":["哇，所有的小动物和二十六个英文字母都挂上了灯笼！宝贝小侦探，你真的太棒啦！"],"art":"story_win"},"end":{"who":"skye","say":["下次再来森林和小动物、还有拉布拉多警长一起玩字母游戏吧，",{"en":"Yay!","zh":"太棒了！"}],"art":"story_win"},"mem_m1":{"who":"labrador","say":["发现秘密明信片！画着阳光大树下红苹果、小熊、小猫和小鸭一起晒太阳呢！"],"art":"bg_woods"},"mem_m2":{"who":"labrador","say":["找到池塘明信片！长颈鹿、小青蛙和漂亮草帽正在水边吹泡泡！"],"art":"bg_pond"},"mem_m3":{"who":"labrador","say":["找到草地明信片！冰淇淋、草莓酱和彩虹风筝飘在蓝天里，太甜了！"],"art":"bg_meadow"},"mem_m4":{"who":"labrador","say":["发现山坡明信片！弯弯的月亮照着鸟窝、小猫头鹰和粉红小猪呢！"],"art":"bg_meadow"},"mem_m5":{"who":"labrador","say":["找到树洞明信片！戴王冠的小公主和小白兔在太阳底下跳舞！"],"art":"bg_woods"},"mem_m6":{"who":"labrador","say":["发现树冠明信片！雨伞、小提琴和小鲸鱼一起奏响森林音乐！"],"art":"bg_canopy"},"mem_m7":{"who":"labrador","say":["找到小溪明信片！彩虹木琴、星星溜溜球和小斑马玩得好开心！"],"art":"bg_pond"},"mem_m8":{"who":"labrador","say":["找到最珍贵的星光纪念明信片！二十六个好朋友大合影真温暖！"],"art":"bg_canopy"},"me_labrador":{"who":"labrador","say":["你好呀小宝贝！我是安全警长拉布拉多，今天我陪你一步一步轻松学完二十六个英文字母！"],"art":"key"},"me_skye":{"who":"skye","say":["嗨小可爱，我是会飞的小狗狗天天！",{"en":"Hello!","zh":"你好！"},"点哪张字母我都立刻大声读给你听！"]},"screen2_letter":{"who":"labrador","say":["字母宝石集齐啦，我们去温柔的字母工坊点一点认识它们吧！"]},"tutor_tap":{"who":"labrador","say":["手指点一点发光的小树桩、小花和蘑菇，就能发现神秘字母啦！"]},"tutor_phonics":{"who":"labrador","say":["欢迎来到字母工坊！仔细听天天念的是哪个字母，再点下面对应的大字母方块就行啦，可以点上面小喇叭再听一次哦！"]},"tutor_fullscreen":{"who":"labrador","say":["把平板画面点大一点，字母看得更清楚哟！"]},"stone_assist":{"who":"labrador","say":["小眼睛看看上面闪烁发亮的那张字母卡，点它就对啦！"]},"stone_try_1":{"who":"labrador","say":["差一点点哦，仔细听听上面的声音，再试一次吧！"]},"stone_try_2":{"who":"labrador","say":["没关系，点一下上面带小喇叭的白色卡片就能再听一遍哦！"]},"stone_try_3":{"who":"labrador","say":["再看看哪个字母和刚刚念的一样呢，慢慢挑没关系！"]},"quiz_right_1":{"who":"skye","say":["太聪明啦！一下就认出来啦！"]},"quiz_right_2":{"who":"skye","say":[{"en":"Good job!","zh":"做得好！"},"完全答对啦！"]},"quiz_right_3":{"who":"skye","say":[{"en":"Yay!","zh":"太棒了！"},"宝贝耳朵真灵，一听就准！"]},"quiz_wrong_1":{"who":"labrador","say":["再仔细听一听是哪个字母呀，点它就亮啦！"]},"quiz_wrong_2":{"who":"labrador","say":["不怕不怕，看看图片里的小宝贝再试一张吧！"]},"quiz_wrong_3":{"who":"labrador","say":["再猜一次一定能找到，加油小侦探！"]},"clue_1":{"who":"labrador","say":["耶，找到一颗闪闪发光的森林小星星！"]},"clue_2":{"who":"labrador","say":["好可爱呀，又收集到一颗金星果！"]},"clue_3":{"who":"labrador","say":["眼力真棒，这个隐藏小礼物也被你发现啦！"]},"clue_4":{"who":"labrador","say":["星光越来越亮了，森林真感谢你！"]},"idle_1":{"who":"labrador","say":["小手点一点屏幕里亮晶晶发光的地方，看看有什么惊喜吧！"]},"idle_2":{"who":"labrador","say":["警长的放大镜提示亮起来啦，点那个发光的圆圈就对喽！"]},"idle_3":{"who":"labrador","say":["跟着暖暖的光圈点过去，小字母正等着和你做朋友呢！"]},"idle_4":{"who":"labrador","say":["不知道该点哪里时，可以随时点右上角那颗小星星提示哦！"]},"cheer_1":{"who":"skye","say":[{"en":"Yay!","zh":"太棒了！"},"和宝贝小侦探一起寻宝最开心啦！"]},"cheer_2":{"who":"skye","say":[{"en":"Good job!","zh":"做得好！"},"给你一个大大的甜甜抱抱！"]},"cheer_3":{"who":"skye","say":["嘿嘿，拉布拉多警长一直守在我们身边呢！"]},"cheer_4":{"who":"skye","say":[{"en":"Hello!","zh":"你好！"},"今天也要开开心心玩字母哦！"]},"ui_play":{"who":"labrador","say":["点大金色按钮，开始森林字母探案吧！"]},"ui_continue":{"who":"labrador","say":["继续接着玩，解锁更多字母伙伴！"]},"ui_next":{"who":"labrador","say":["准备好了，我们去下一关吧！"]},"ui_replay":{"who":"labrador","say":["再来玩一遍这一关，越认越熟！"]},"ui_back":{"who":"labrador","say":["回到游戏首页地图。"]},"ui_words":{"who":"labrador","say":["翻开二十六个字母可爱图鉴，点谁就读谁！"]},"ui_stickers":{"who":"labrador","say":["来到秘密贴纸树屋，把字母小动物贴在黑板上吧！"]},"ui_wardrobe":{"who":"labrador","say":["给天天和警长挑一套漂亮的小衣服和帽子吧！"]},"ui_settings":{"who":"labrador","say":["按住不松开一会儿，可以打开家长小助手。"]},"ui_hint":{"who":"labrador","say":["亮亮小星星提示！点闪光的地方就行啦！"]},"ui_fullscreen":{"who":"labrador","say":["放大到全屏画面！"]},"ui_sound":{"who":"labrador","say":["点上面白色小喇叭牌，再听一次字母声音！"]},"ui_quiz_skip":{"who":"labrador","say":["可以直接跳到下一个小环节哦。"]},"ui_meet":{"who":"labrador","say":["快来认识天天和警长，还能换漂亮装扮呢！"]},"ui_rooms":{"who":"labrador","say":["选一个森林章节进去找字母吧！"]},"ui_room_tree":{"who":"labrador","say":["第一关：阳光大树 A 到 D"]},"ui_room_pond":{"who":"labrador","say":["第二关：萤火池塘 E 到 H"]},"ui_room_meadow":{"who":"labrador","say":["第三关：花朵草地 I 到 L"]},"ui_room_hill":{"who":"labrador","say":["第四关：松果山坡 M 到 P"]},"ui_room_hollow":{"who":"labrador","say":["第五关：秘密树洞 Q 到 T"]},"ui_room_nest":{"who":"labrador","say":["第六关：树冠花园 U 到 W"]},"ui_room_creek":{"who":"labrador","say":["第七关：叮咚小溪 X 到 Z"]},"ui_room_camp":{"who":"labrador","say":["第八关：星光树屋 A 到 Z 狂欢"]},"ph_a":{"who":"skye","say":["Letter A!"]},"learn_a":{"who":"skye","say":["看呀，这是字母 ",{"w":"a"},"，",{"w":"a"}," 是苹果！跟我念 ",{"w":"a"},"！"]},"spot_a":{"who":"skye","say":["找到啦！",{"w":"a"},"，苹果 ",{"w":"a"},"！"]},"blend_a":{"who":"skye","say":["太棒了！",{"w":"a"},"，",{"en":"A is for apple! Yay!","zh":"就是苹果，太棒啦！"}," ",{"w":"a"},"！"]},"quiz_a":{"who":"skye","say":["请找找哪个是 ",{"w":"a"}," 呀？"]},"recall_a":{"who":"skye","say":["还记得字母 ",{"w":"a"}," 吗？",{"w":"a"},"，就是苹果！"]},"ph_b":{"who":"skye","say":["Letter B!"]},"learn_b":{"who":"skye","say":["看呀，这是字母 ",{"w":"b"},"，",{"w":"b"}," 是小熊！跟我念 ",{"w":"b"},"！"]},"spot_b":{"who":"skye","say":["找到啦！",{"w":"b"},"，小熊 ",{"w":"b"},"！"]},"blend_b":{"who":"skye","say":["太棒了！",{"w":"b"},"，",{"en":"B is for bear! Yay!","zh":"就是小熊，太棒啦！"}," ",{"w":"b"},"！"]},"quiz_b":{"who":"skye","say":["请找找哪个是 ",{"w":"b"}," 呀？"]},"recall_b":{"who":"skye","say":["还记得字母 ",{"w":"b"}," 吗？",{"w":"b"},"，就是小熊！"]},"ph_c":{"who":"skye","say":["Letter C!"]},"learn_c":{"who":"skye","say":["看呀，这是字母 ",{"w":"c"},"，",{"w":"c"}," 是小猫！跟我念 ",{"w":"c"},"！"]},"spot_c":{"who":"skye","say":["找到啦！",{"w":"c"},"，小猫 ",{"w":"c"},"！"]},"blend_c":{"who":"skye","say":["太棒了！",{"w":"c"},"，",{"en":"C is for cat! Yay!","zh":"就是小猫，太棒啦！"}," ",{"w":"c"},"！"]},"quiz_c":{"who":"skye","say":["请找找哪个是 ",{"w":"c"}," 呀？"]},"recall_c":{"who":"skye","say":["还记得字母 ",{"w":"c"}," 吗？",{"w":"c"},"，就是小猫！"]},"ph_d":{"who":"skye","say":["Letter D!"]},"learn_d":{"who":"skye","say":["看呀，这是字母 ",{"w":"d"},"，",{"w":"d"}," 是小鸭！跟我念 ",{"w":"d"},"！"]},"spot_d":{"who":"skye","say":["找到啦！",{"w":"d"},"，小鸭 ",{"w":"d"},"！"]},"blend_d":{"who":"skye","say":["太棒了！",{"w":"d"},"，",{"en":"D is for duck! Yay!","zh":"就是小鸭，太棒啦！"}," ",{"w":"d"},"！"]},"quiz_d":{"who":"skye","say":["请找找哪个是 ",{"w":"d"}," 呀？"]},"recall_d":{"who":"skye","say":["还记得字母 ",{"w":"d"}," 吗？",{"w":"d"},"，就是小鸭！"]},"ph_e":{"who":"skye","say":["Letter E!"]},"learn_e":{"who":"skye","say":["看呀，这是字母 ",{"w":"e"},"，",{"w":"e"}," 是彩蛋！跟我念 ",{"w":"e"},"！"]},"spot_e":{"who":"skye","say":["找到啦！",{"w":"e"},"，彩蛋 ",{"w":"e"},"！"]},"blend_e":{"who":"skye","say":["太棒了！",{"w":"e"},"，",{"en":"E is for egg! Yay!","zh":"就是彩蛋，太棒啦！"}," ",{"w":"e"},"！"]},"quiz_e":{"who":"skye","say":["请找找哪个是 ",{"w":"e"}," 呀？"]},"recall_e":{"who":"skye","say":["还记得字母 ",{"w":"e"}," 吗？",{"w":"e"},"，就是彩蛋！"]},"ph_f":{"who":"skye","say":["Letter F!"]},"learn_f":{"who":"skye","say":["看呀，这是字母 ",{"w":"f"},"，",{"w":"f"}," 是小青蛙！跟我念 ",{"w":"f"},"！"]},"spot_f":{"who":"skye","say":["找到啦！",{"w":"f"},"，小青蛙 ",{"w":"f"},"！"]},"blend_f":{"who":"skye","say":["太棒了！",{"w":"f"},"，",{"en":"F is for frog! Yay!","zh":"就是小青蛙，太棒啦！"}," ",{"w":"f"},"！"]},"quiz_f":{"who":"skye","say":["请找找哪个是 ",{"w":"f"}," 呀？"]},"recall_f":{"who":"skye","say":["还记得字母 ",{"w":"f"}," 吗？",{"w":"f"},"，就是小青蛙！"]},"ph_g":{"who":"skye","say":["Letter G!"]},"learn_g":{"who":"skye","say":["看呀，这是字母 ",{"w":"g"},"，",{"w":"g"}," 是长颈鹿！跟我念 ",{"w":"g"},"！"]},"spot_g":{"who":"skye","say":["找到啦！",{"w":"g"},"，长颈鹿 ",{"w":"g"},"！"]},"blend_g":{"who":"skye","say":["太棒了！",{"w":"g"},"，",{"en":"G is for giraffe! Yay!","zh":"就是长颈鹿，太棒啦！"}," ",{"w":"g"},"！"]},"quiz_g":{"who":"skye","say":["请找找哪个是 ",{"w":"g"}," 呀？"]},"recall_g":{"who":"skye","say":["还记得字母 ",{"w":"g"}," 吗？",{"w":"g"},"，就是长颈鹿！"]},"ph_h":{"who":"skye","say":["Letter H!"]},"learn_h":{"who":"skye","say":["看呀，这是字母 ",{"w":"h"},"，",{"w":"h"}," 是草帽！跟我念 ",{"w":"h"},"！"]},"spot_h":{"who":"skye","say":["找到啦！",{"w":"h"},"，草帽 ",{"w":"h"},"！"]},"blend_h":{"who":"skye","say":["太棒了！",{"w":"h"},"，",{"en":"H is for hat! Yay!","zh":"就是草帽，太棒啦！"}," ",{"w":"h"},"！"]},"quiz_h":{"who":"skye","say":["请找找哪个是 ",{"w":"h"}," 呀？"]},"recall_h":{"who":"skye","say":["还记得字母 ",{"w":"h"}," 吗？",{"w":"h"},"，就是草帽！"]},"ph_i":{"who":"skye","say":["Letter I!"]},"learn_i":{"who":"skye","say":["看呀，这是字母 ",{"w":"i"},"，",{"w":"i"}," 是冰淇淋！跟我念 ",{"w":"i"},"！"]},"spot_i":{"who":"skye","say":["找到啦！",{"w":"i"},"，冰淇淋 ",{"w":"i"},"！"]},"blend_i":{"who":"skye","say":["太棒了！",{"w":"i"},"，",{"en":"I is for ice cream! Yay!","zh":"就是冰淇淋，太棒啦！"}," ",{"w":"i"},"！"]},"quiz_i":{"who":"skye","say":["请找找哪个是 ",{"w":"i"}," 呀？"]},"recall_i":{"who":"skye","say":["还记得字母 ",{"w":"i"}," 吗？",{"w":"i"},"，就是冰淇淋！"]},"ph_j":{"who":"skye","say":["Letter J!"]},"learn_j":{"who":"skye","say":["看呀，这是字母 ",{"w":"j"},"，",{"w":"j"}," 是草莓酱！跟我念 ",{"w":"j"},"！"]},"spot_j":{"who":"skye","say":["找到啦！",{"w":"j"},"，草莓酱 ",{"w":"j"},"！"]},"blend_j":{"who":"skye","say":["太棒了！",{"w":"j"},"，",{"en":"J is for jam! Yay!","zh":"就是草莓酱，太棒啦！"}," ",{"w":"j"},"！"]},"quiz_j":{"who":"skye","say":["请找找哪个是 ",{"w":"j"}," 呀？"]},"recall_j":{"who":"skye","say":["还记得字母 ",{"w":"j"}," 吗？",{"w":"j"},"，就是草莓酱！"]},"ph_k":{"who":"skye","say":["Letter K!"]},"learn_k":{"who":"skye","say":["看呀，这是字母 ",{"w":"k"},"，",{"w":"k"}," 是风筝！跟我念 ",{"w":"k"},"！"]},"spot_k":{"who":"skye","say":["找到啦！",{"w":"k"},"，风筝 ",{"w":"k"},"！"]},"blend_k":{"who":"skye","say":["太棒了！",{"w":"k"},"，",{"en":"K is for kite! Yay!","zh":"就是风筝，太棒啦！"}," ",{"w":"k"},"！"]},"quiz_k":{"who":"skye","say":["请找找哪个是 ",{"w":"k"}," 呀？"]},"recall_k":{"who":"skye","say":["还记得字母 ",{"w":"k"}," 吗？",{"w":"k"},"，就是风筝！"]},"ph_l":{"who":"skye","say":["Letter L!"]},"learn_l":{"who":"skye","say":["看呀，这是字母 ",{"w":"l"},"，",{"w":"l"}," 是小狮子！跟我念 ",{"w":"l"},"！"]},"spot_l":{"who":"skye","say":["找到啦！",{"w":"l"},"，小狮子 ",{"w":"l"},"！"]},"blend_l":{"who":"skye","say":["太棒了！",{"w":"l"},"，",{"en":"L is for lion! Yay!","zh":"就是小狮子，太棒啦！"}," ",{"w":"l"},"！"]},"quiz_l":{"who":"skye","say":["请找找哪个是 ",{"w":"l"}," 呀？"]},"recall_l":{"who":"skye","say":["还记得字母 ",{"w":"l"}," 吗？",{"w":"l"},"，就是小狮子！"]},"ph_m":{"who":"skye","say":["Letter M!"]},"learn_m":{"who":"skye","say":["看呀，这是字母 ",{"w":"m"},"，",{"w":"m"}," 是月亮！跟我念 ",{"w":"m"},"！"]},"spot_m":{"who":"skye","say":["找到啦！",{"w":"m"},"，月亮 ",{"w":"m"},"！"]},"blend_m":{"who":"skye","say":["太棒了！",{"w":"m"},"，",{"en":"M is for moon! Yay!","zh":"就是月亮，太棒啦！"}," ",{"w":"m"},"！"]},"quiz_m":{"who":"skye","say":["请找找哪个是 ",{"w":"m"}," 呀？"]},"recall_m":{"who":"skye","say":["还记得字母 ",{"w":"m"}," 吗？",{"w":"m"},"，就是月亮！"]},"ph_n":{"who":"skye","say":["Letter N!"]},"learn_n":{"who":"skye","say":["看呀，这是字母 ",{"w":"n"},"，",{"w":"n"}," 是鸟窝！跟我念 ",{"w":"n"},"！"]},"spot_n":{"who":"skye","say":["找到啦！",{"w":"n"},"，鸟窝 ",{"w":"n"},"！"]},"blend_n":{"who":"skye","say":["太棒了！",{"w":"n"},"，",{"en":"N is for nest! Yay!","zh":"就是鸟窝，太棒啦！"}," ",{"w":"n"},"！"]},"quiz_n":{"who":"skye","say":["请找找哪个是 ",{"w":"n"}," 呀？"]},"recall_n":{"who":"skye","say":["还记得字母 ",{"w":"n"}," 吗？",{"w":"n"},"，就是鸟窝！"]},"ph_o":{"who":"skye","say":["Letter O!"]},"learn_o":{"who":"skye","say":["看呀，这是字母 ",{"w":"o"},"，",{"w":"o"}," 是猫头鹰！跟我念 ",{"w":"o"},"！"]},"spot_o":{"who":"skye","say":["找到啦！",{"w":"o"},"，猫头鹰 ",{"w":"o"},"！"]},"blend_o":{"who":"skye","say":["太棒了！",{"w":"o"},"，",{"en":"O is for owl! Yay!","zh":"就是猫头鹰，太棒啦！"}," ",{"w":"o"},"！"]},"quiz_o":{"who":"skye","say":["请找找哪个是 ",{"w":"o"}," 呀？"]},"recall_o":{"who":"skye","say":["还记得字母 ",{"w":"o"}," 吗？",{"w":"o"},"，就是猫头鹰！"]},"ph_p":{"who":"skye","say":["Letter P!"]},"learn_p":{"who":"skye","say":["看呀，这是字母 ",{"w":"p"},"，",{"w":"p"}," 是小猪！跟我念 ",{"w":"p"},"！"]},"spot_p":{"who":"skye","say":["找到啦！",{"w":"p"},"，小猪 ",{"w":"p"},"！"]},"blend_p":{"who":"skye","say":["太棒了！",{"w":"p"},"，",{"en":"P is for pig! Yay!","zh":"就是小猪，太棒啦！"}," ",{"w":"p"},"！"]},"quiz_p":{"who":"skye","say":["请找找哪个是 ",{"w":"p"}," 呀？"]},"recall_p":{"who":"skye","say":["还记得字母 ",{"w":"p"}," 吗？",{"w":"p"},"，就是小猪！"]},"ph_q":{"who":"skye","say":["Letter Q!"]},"learn_q":{"who":"skye","say":["看呀，这是字母 ",{"w":"q"},"，",{"w":"q"}," 是小公主！跟我念 ",{"w":"q"},"！"]},"spot_q":{"who":"skye","say":["找到啦！",{"w":"q"},"，小公主 ",{"w":"q"},"！"]},"blend_q":{"who":"skye","say":["太棒了！",{"w":"q"},"，",{"en":"Q is for queen! Yay!","zh":"就是小公主，太棒啦！"}," ",{"w":"q"},"！"]},"quiz_q":{"who":"skye","say":["请找找哪个是 ",{"w":"q"}," 呀？"]},"recall_q":{"who":"skye","say":["还记得字母 ",{"w":"q"}," 吗？",{"w":"q"},"，就是小公主！"]},"ph_r":{"who":"skye","say":["Letter R!"]},"learn_r":{"who":"skye","say":["看呀，这是字母 ",{"w":"r"},"，",{"w":"r"}," 是小白兔！跟我念 ",{"w":"r"},"！"]},"spot_r":{"who":"skye","say":["找到啦！",{"w":"r"},"，小白兔 ",{"w":"r"},"！"]},"blend_r":{"who":"skye","say":["太棒了！",{"w":"r"},"，",{"en":"R is for rabbit! Yay!","zh":"就是小白兔，太棒啦！"}," ",{"w":"r"},"！"]},"quiz_r":{"who":"skye","say":["请找找哪个是 ",{"w":"r"}," 呀？"]},"recall_r":{"who":"skye","say":["还记得字母 ",{"w":"r"}," 吗？",{"w":"r"},"，就是小白兔！"]},"ph_s":{"who":"skye","say":["Letter S!"]},"learn_s":{"who":"skye","say":["看呀，这是字母 ",{"w":"s"},"，",{"w":"s"}," 是太阳！跟我念 ",{"w":"s"},"！"]},"spot_s":{"who":"skye","say":["找到啦！",{"w":"s"},"，太阳 ",{"w":"s"},"！"]},"blend_s":{"who":"skye","say":["太棒了！",{"w":"s"},"，",{"en":"S is for sun! Yay!","zh":"就是太阳，太棒啦！"}," ",{"w":"s"},"！"]},"quiz_s":{"who":"skye","say":["请找找哪个是 ",{"w":"s"}," 呀？"]},"recall_s":{"who":"skye","say":["还记得字母 ",{"w":"s"}," 吗？",{"w":"s"},"，就是太阳！"]},"ph_t":{"who":"skye","say":["Letter T!"]},"learn_t":{"who":"skye","say":["看呀，这是字母 ",{"w":"t"},"，",{"w":"t"}," 是大树！跟我念 ",{"w":"t"},"！"]},"spot_t":{"who":"skye","say":["找到啦！",{"w":"t"},"，大树 ",{"w":"t"},"！"]},"blend_t":{"who":"skye","say":["太棒了！",{"w":"t"},"，",{"en":"T is for tree! Yay!","zh":"就是大树，太棒啦！"}," ",{"w":"t"},"！"]},"quiz_t":{"who":"skye","say":["请找找哪个是 ",{"w":"t"}," 呀？"]},"recall_t":{"who":"skye","say":["还记得字母 ",{"w":"t"}," 吗？",{"w":"t"},"，就是大树！"]},"ph_u":{"who":"skye","say":["Letter U!"]},"learn_u":{"who":"skye","say":["看呀，这是字母 ",{"w":"u"},"，",{"w":"u"}," 是彩虹伞！跟我念 ",{"w":"u"},"！"]},"spot_u":{"who":"skye","say":["找到啦！",{"w":"u"},"，彩虹伞 ",{"w":"u"},"！"]},"blend_u":{"who":"skye","say":["太棒了！",{"w":"u"},"，",{"en":"U is for umbrella! Yay!","zh":"就是彩虹伞，太棒啦！"}," ",{"w":"u"},"！"]},"quiz_u":{"who":"skye","say":["请找找哪个是 ",{"w":"u"}," 呀？"]},"recall_u":{"who":"skye","say":["还记得字母 ",{"w":"u"}," 吗？",{"w":"u"},"，就是彩虹伞！"]},"ph_v":{"who":"skye","say":["Letter V!"]},"learn_v":{"who":"skye","say":["看呀，这是字母 ",{"w":"v"},"，",{"w":"v"}," 是小提琴！跟我念 ",{"w":"v"},"！"]},"spot_v":{"who":"skye","say":["找到啦！",{"w":"v"},"，小提琴 ",{"w":"v"},"！"]},"blend_v":{"who":"skye","say":["太棒了！",{"w":"v"},"，",{"en":"V is for violin! Yay!","zh":"就是小提琴，太棒啦！"}," ",{"w":"v"},"！"]},"quiz_v":{"who":"skye","say":["请找找哪个是 ",{"w":"v"}," 呀？"]},"recall_v":{"who":"skye","say":["还记得字母 ",{"w":"v"}," 吗？",{"w":"v"},"，就是小提琴！"]},"ph_w":{"who":"skye","say":["Letter W!"]},"learn_w":{"who":"skye","say":["看呀，这是字母 ",{"w":"w"},"，",{"w":"w"}," 是小鲸鱼！跟我念 ",{"w":"w"},"！"]},"spot_w":{"who":"skye","say":["找到啦！",{"w":"w"},"，小鲸鱼 ",{"w":"w"},"！"]},"blend_w":{"who":"skye","say":["太棒了！",{"w":"w"},"，",{"en":"W is for whale! Yay!","zh":"就是小鲸鱼，太棒啦！"}," ",{"w":"w"},"！"]},"quiz_w":{"who":"skye","say":["请找找哪个是 ",{"w":"w"}," 呀？"]},"recall_w":{"who":"skye","say":["还记得字母 ",{"w":"w"}," 吗？",{"w":"w"},"，就是小鲸鱼！"]},"ph_x":{"who":"skye","say":["Letter X!"]},"learn_x":{"who":"skye","say":["看呀，这是字母 ",{"w":"x"},"，",{"w":"x"}," 是彩虹木琴！跟我念 ",{"w":"x"},"！"]},"spot_x":{"who":"skye","say":["找到啦！",{"w":"x"},"，彩虹木琴 ",{"w":"x"},"！"]},"blend_x":{"who":"skye","say":["太棒了！",{"w":"x"},"，",{"en":"X is for xylophone! Yay!","zh":"就是彩虹木琴，太棒啦！"}," ",{"w":"x"},"！"]},"quiz_x":{"who":"skye","say":["请找找哪个是 ",{"w":"x"}," 呀？"]},"recall_x":{"who":"skye","say":["还记得字母 ",{"w":"x"}," 吗？",{"w":"x"},"，就是彩虹木琴！"]},"ph_y":{"who":"skye","say":["Letter Y!"]},"learn_y":{"who":"skye","say":["看呀，这是字母 ",{"w":"y"},"，",{"w":"y"}," 是溜溜球！跟我念 ",{"w":"y"},"！"]},"spot_y":{"who":"skye","say":["找到啦！",{"w":"y"},"，溜溜球 ",{"w":"y"},"！"]},"blend_y":{"who":"skye","say":["太棒了！",{"w":"y"},"，",{"en":"Y is for yo-yo! Yay!","zh":"就是溜溜球，太棒啦！"}," ",{"w":"y"},"！"]},"quiz_y":{"who":"skye","say":["请找找哪个是 ",{"w":"y"}," 呀？"]},"recall_y":{"who":"skye","say":["还记得字母 ",{"w":"y"}," 吗？",{"w":"y"},"，就是溜溜球！"]},"ph_z":{"who":"skye","say":["Letter Z!"]},"learn_z":{"who":"skye","say":["看呀，这是字母 ",{"w":"z"},"，",{"w":"z"}," 是小斑马！跟我念 ",{"w":"z"},"！"]},"spot_z":{"who":"skye","say":["找到啦！",{"w":"z"},"，小斑马 ",{"w":"z"},"！"]},"blend_z":{"who":"skye","say":["太棒了！",{"w":"z"},"，",{"en":"Z is for zebra! Yay!","zh":"就是小斑马，太棒啦！"}," ",{"w":"z"},"！"]},"quiz_z":{"who":"skye","say":["请找找哪个是 ",{"w":"z"}," 呀？"]},"recall_z":{"who":"skye","say":["还记得字母 ",{"w":"z"}," 吗？",{"w":"z"},"，就是小斑马！"]},"ui_abc_song":{"who":"skye","say":["彩虹字母歌琴键！"]},"ui_trace":{"who":"skye","say":["星光描红写字母！"]},"ui_case_match":{"who":"skye","say":["大小写字母牵牵手！"]},"abc_piano_intro":{"who":"labrador","say":["欢迎来到彩虹字母琴键！点一点会唱歌，点小音符就能听整首 ABC 字母歌哦！"]},"abc_piano_guide":{"who":"skye","say":["跟着发光的小星星，从 A 弹到 Z 吧！"]},"abc_piano_win":{"who":"labrador","say":["哇，二十六个字母全部弹完啦！你就是森林里最棒的小钢琴家！"]},"trace_intro":{"who":"skye","say":["伸出小手指，跟着发光的小星星画一画字母吧！"]},"trace_done_1":{"who":"skye","say":["写得真漂亮！送你漫天小星星！"]},"trace_done_2":{"who":"labrador","say":["太厉害啦！小侦探的字母写得又稳又好看！"]},"match_intro":{"who":"labrador","say":["大字母姐姐在找小字母宝宝呢，帮它们牵牵手吧！"]},"match_done":{"who":"skye","say":["耶！大字母和小字母全部牵手成功啦，你真棒！"]}}};
   const WORDS = [{"id":"a","letter":"A","lower":"a","en":"A, apple","wordEn":"apple","zh":"苹果","icon":"word_a","room":"tree","kind":"core"},{"id":"b","letter":"B","lower":"b","en":"B, bear","wordEn":"bear","zh":"小熊","icon":"word_b","room":"tree","kind":"core"},{"id":"c","letter":"C","lower":"c","en":"C, cat","wordEn":"cat","zh":"小猫","icon":"word_c","room":"tree","kind":"core"},{"id":"d","letter":"D","lower":"d","en":"D, duck","wordEn":"duck","zh":"小鸭","icon":"word_d","room":"tree","kind":"core"},{"id":"e","letter":"E","lower":"e","en":"E, egg","wordEn":"egg","zh":"彩蛋","icon":"word_e","room":"pond","kind":"core"},{"id":"f","letter":"F","lower":"f","en":"F, frog","wordEn":"frog","zh":"小青蛙","icon":"word_f","room":"pond","kind":"core"},{"id":"g","letter":"G","lower":"g","en":"G, giraffe","wordEn":"giraffe","zh":"长颈鹿","icon":"word_g","room":"pond","kind":"core"},{"id":"h","letter":"H","lower":"h","en":"H, hat","wordEn":"hat","zh":"草帽","icon":"word_h","room":"pond","kind":"core"},{"id":"i","letter":"I","lower":"i","en":"I, ice cream","wordEn":"ice cream","zh":"冰淇淋","icon":"word_i","room":"meadow","kind":"core"},{"id":"j","letter":"J","lower":"j","en":"J, jam","wordEn":"jam","zh":"草莓酱","icon":"word_j","room":"meadow","kind":"core"},{"id":"k","letter":"K","lower":"k","en":"K, kite","wordEn":"kite","zh":"风筝","icon":"word_k","room":"meadow","kind":"core"},{"id":"l","letter":"L","lower":"l","en":"L, lion","wordEn":"lion","zh":"小狮子","icon":"word_l","room":"meadow","kind":"core"},{"id":"m","letter":"M","lower":"m","en":"M, moon","wordEn":"moon","zh":"月亮","icon":"word_m","room":"hill","kind":"core"},{"id":"n","letter":"N","lower":"n","en":"N, nest","wordEn":"nest","zh":"鸟窝","icon":"word_n","room":"hill","kind":"core"},{"id":"o","letter":"O","lower":"o","en":"O, owl","wordEn":"owl","zh":"猫头鹰","icon":"word_o","room":"hill","kind":"core"},{"id":"p","letter":"P","lower":"p","en":"P, pig","wordEn":"pig","zh":"小猪","icon":"word_p","room":"hill","kind":"core"},{"id":"q","letter":"Q","lower":"q","en":"Q, queen","wordEn":"queen","zh":"小公主","icon":"word_q","room":"hollow","kind":"core"},{"id":"r","letter":"R","lower":"r","en":"R, rabbit","wordEn":"rabbit","zh":"小白兔","icon":"word_r","room":"hollow","kind":"core"},{"id":"s","letter":"S","lower":"s","en":"S, sun","wordEn":"sun","zh":"太阳","icon":"word_s","room":"hollow","kind":"core"},{"id":"t","letter":"T","lower":"t","en":"T, tree","wordEn":"tree","zh":"大树","icon":"word_t","room":"hollow","kind":"core"},{"id":"u","letter":"U","lower":"u","en":"U, umbrella","wordEn":"umbrella","zh":"彩虹伞","icon":"word_u","room":"nest","kind":"core"},{"id":"v","letter":"V","lower":"v","en":"V, violin","wordEn":"violin","zh":"小提琴","icon":"word_v","room":"nest","kind":"core"},{"id":"w","letter":"W","lower":"w","en":"W, whale","wordEn":"whale","zh":"小鲸鱼","icon":"word_w","room":"nest","kind":"core"},{"id":"x","letter":"X","lower":"x","en":"X, xylophone","wordEn":"xylophone","zh":"彩虹木琴","icon":"word_x","room":"creek","kind":"core"},{"id":"y","letter":"Y","lower":"y","en":"Y, yo-yo","wordEn":"yo-yo","zh":"溜溜球","icon":"word_y","room":"creek","kind":"core"},{"id":"z","letter":"Z","lower":"z","en":"Z, zebra","wordEn":"zebra","zh":"小斑马","icon":"word_z","room":"creek","kind":"core"},{"id":"hello","en":"Hello!","zh":"你好！","room":"tree","kind":"general"},{"id":"yay","en":"Yay!","zh":"太棒了！","room":"tree","kind":"general"},{"id":"good","en":"Good job!","zh":"真棒！","room":"tree","kind":"general"}];
   const lineOf = key => (LINES.lines && LINES.lines[key]) || null;
   const hasLineKey = key => !!lineOf(key);
@@ -1472,7 +1593,8 @@ function createGame() {
     });
   }
 
-  function revealWorkshopMascot(wordId) {
+  function revealWorkshopMascot(wordId, opts) {
+    const o = opts || {};
     const animalG = $('wsAnimal');
     if (animalG) {
       animalG.textContent = '';
@@ -1481,8 +1603,16 @@ function createGame() {
       const wIcon = 'word_' + wordId;
       const [ww, wh] = SIZES[wIcon] || [200, 200];
       const ws = 154 / Math.max(ww, wh);
-      const popG = el('g', { class: 'ux-pop on' }, animalG);
+      const popG = el('g', { class: 'ux-pop on ux-btn', role: 'button', tabindex: '0', 'aria-label': String(wordId).toUpperCase() }, animalG);
+      el('circle', { r: 78, fill: 'transparent' }, popG);
       img(wIcon, -(ww * ws) / 2, -(wh * ws) / 2 - 4, ww * ws, wh * ws, popG, { class: 'ux-anim-pulse' });
+      const tapMascot = () => {
+        uxNudge(popG);
+        if (typeof voice !== 'undefined' && voice.word) voice.word(wordId);
+        uxConfetti($('fx'), 480, 200, 12);
+      };
+      popG.addEventListener('click', tapMascot);
+      popG.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tapMascot(); } });
     }
     const wObj = WORDS.find(x => x.id === wordId);
     const bg = $('wsPlaqueBg'), txt = $('wsPlaqueTxt');
@@ -1491,6 +1621,28 @@ function createGame() {
       txt.setAttribute('fill', '#b8326a');
       txt.setAttribute('font-size', '28');
       txt.textContent = `${wObj.letter}${wObj.lower} · ${wObj.wordEn}`;
+    }
+    const box = $('workshop');
+    if (box) {
+      box.querySelectorAll('[data-act="ws-trace"], [data-act="ws-next"]').forEach(n => n.remove());
+      if (o.onTrace || o.onNext) {
+        let html = '';
+        if (o.onTrace) html += uxButton({ act: 'ws-trace', ui: 'trace', icon: 'trace', x: 716, y: 212, r: 36, cls: 'ux-pop on' });
+        if (o.onNext) html += uxButton({ act: 'ws-next', ui: 'next', icon: 'next', x: 836, y: 212, r: 34, plate: 'gold', cls: 'ux-pop on' });
+        box.insertAdjacentHTML('beforeend', html);
+        const trBtn = box.querySelector('[data-act="ws-trace"]');
+        if (trBtn && o.onTrace) {
+          trBtn.addEventListener('pointerenter', () => { if (typeof voice !== 'undefined') voice.ui('trace'); });
+          trBtn.addEventListener('click', o.onTrace);
+          trBtn.addEventListener('keydown', /** @param {KeyboardEvent} e */ e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); o.onTrace(); } });
+        }
+        const nxBtn = box.querySelector('[data-act="ws-next"]');
+        if (nxBtn && o.onNext) {
+          nxBtn.addEventListener('pointerenter', () => { if (typeof voice !== 'undefined') voice.ui('next'); });
+          nxBtn.addEventListener('click', o.onNext);
+          nxBtn.addEventListener('keydown', /** @param {KeyboardEvent} e */ e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); o.onNext(); } });
+        }
+      }
     }
   }
 
@@ -1520,14 +1672,16 @@ function createGame() {
     const hName = 'hat_' + hat;
     if (!SIZES[hName]) return;
     const [hw, hh] = SIZES[hName];
-    const scale = who === 'skye' ? .42 : .45;
+    const isBand = hat === 'bow' || hat === 'butterfly';
+    const scale = isBand ? (who === 'skye' ? .48 : .52) : (who === 'skye' ? .42 : .45);
     const w = hw * scale, h = hh * scale;
     const dx = who === 'skye'
       ? (pose === 'fly' ? 11 : (pose === 'idle' ? 8 : 4))
       : (pose === 'cheer' ? -2 : (pose === 'search' ? 5 : (pose === 'walk' ? 3 : 2)));
-    const dy = who === 'skye'
+    const bandDy = hat === 'bow' ? 10 : (hat === 'butterfly' ? 7 : 0);
+    const dy = (who === 'skye'
       ? (pose === 'cheer' ? -110 : -106)
-      : (pose === 'cheer' ? -131 : -126);
+      : (pose === 'cheer' ? -131 : -126)) + bandDy;
     img(hName, dx - w / 2, dy - h / 2, w, h, parent);
   }
 
@@ -1644,7 +1798,7 @@ function createGame() {
     } else if (g.hintTarget.screen === 1) {
       const choices = g.currentChoices();
       const idx = choices.indexOf(g.hintTarget.val);
-      gx = [265, 480, 695][idx >= 0 ? idx : 1];
+      gx = [250, 480, 710][idx >= 0 ? idx : 1];
       gy = 428;
     }
     const r = 52 + Math.sin(now * 5) * 6;
@@ -1681,10 +1835,15 @@ function createGame() {
   }
   /* Procedural WebAudio woodland score & tactile phonics Foley, plus music ducking and portrait suspension. */
   const AC = window.AudioContext || window.webkitAudioContext;
-  let audio = null, muted = !setting('sound'), voiceOn = false, bus = null, noiseBuf = null, curLevel = 0;
+  let audio = null, muted = !setting('sound'), voiceOn = false, pianoActive = false, bus = null, noiseBuf = null, curLevel = 0;
 
   const soundWanted = () => !muted && !(typeof isPortraitView === 'function' && isPortraitView());
-  const musicLevel = () => soundWanted() ? (voiceOn ? .035 : .14) : 0;
+  const musicLevel = () => soundWanted() ? (pianoActive ? .02 : (voiceOn ? .035 : .14)) : 0;
+
+  function setPianoDuck(on) {
+    pianoActive = !!on;
+    refreshAudioGains();
+  }
 
   function makeAudio() {
     if (audio || !AC) return;
@@ -1777,7 +1936,19 @@ function createGame() {
     } else if (kind === 'page') {
       rustleBurst(t, .14, 1400, 1.2, .08);
       envNote(t, midi(72), .11, .09, 'sine');
+    } else if (kind === 'gliss') {
+      [60, 62, 64, 65, 67, 69, 71, 72, 76, 79, 84].forEach((m, i) => envNote(t + i * .045, midi(m), .38, .14, 'triangle'));
     }
+  }
+
+  function playPianoNote(midiNote, accent) {
+    unlockAudio();
+    if (!audio || !soundWanted()) return;
+    const t = audio.currentTime;
+    const dur = accent ? .52 : .38;
+    const vol = accent ? .22 : .18;
+    envNote(t, midi(midiNote), dur, vol, 'triangle');
+    envNote(t + .01, midi(midiNote + 12), dur * .75, vol * .38, 'sine');
   }
 
   /* 8 bright, gentle acoustic woodland scores (marimba + warm pluck bass + soft flute motif) */
@@ -1883,8 +2054,7 @@ function createGame() {
           hideBubble();
           if (isDev()) window.__wordStats = wordStats;
         } else if (e.type === 'clue' && e.word) {
-          voice.word(e.word);
-          say('spot_' + e.word, { tag: 'spot', maxWait: 4500 });
+          say('spot_' + e.word, { interrupt: true, tag: 'spot', maxWait: 4500 });
         } else if (e.type === 'memory') {
           if (typeof openMemoryOverlay === 'function') openMemoryOverlay(e.memoryId);
         } else if (e.type === 'acorn') {
@@ -1900,9 +2070,6 @@ function createGame() {
           }
           const r0 = g.currentRound();
           if (r0) say('quiz_' + r0.word, { tag: 'prompt', maxWait: 5000 });
-        } else if (e.type === 'word_blended') {
-          voice.word(e.word);
-          say('blend_' + e.word, { tag: 'blend', maxWait: 5000 });
         } else if (e.type === 'stone_assist') {
           say('stone_assist', { interrupt: true, tag: 'assist', maxWait: 4000 });
         } else if (e.type === 'stone_try') {
@@ -1988,6 +2155,9 @@ function createGame() {
     if (kind === 'wardrobe') return `<path d="M0 ${-s * .5}L${s * .45} ${-s * .1}L${s * .3} ${s * .55}H${-s * .3}L${-s * .45} ${-s * .1}Z" fill="none" stroke="${c}" stroke-width="2.6" stroke-linejoin="round"/>`;
     if (kind === 'rooms') return `<rect x="${-s * .5}" y="${-s * .5}" width="${s * .42}" height="${s * .42}" rx="4" fill="${c}"/><rect x="${s * .08}" y="${-s * .5}" width="${s * .42}" height="${s * .42}" rx="4" fill="${c}"/><rect x="${-s * .5}" y="${s * .08}" width="${s * .42}" height="${s * .42}" rx="4" fill="${c}"/><rect x="${s * .08}" y="${s * .08}" width="${s * .42}" height="${s * .42}" rx="4" fill="${c}"/>`;
     if (kind === 'gear') return `<circle r="${s * .42}" fill="none" stroke="${c}" stroke-width="3.2" stroke-dasharray="5 3"/><circle r="${s * .16}" fill="${c}"/>`;
+    if (kind === 'note') return `<path d="M${-s * .15} ${s * .3}V${-s * .48}L${s * .45} ${-s * .6}V${s * .18}" fill="none" stroke="${c}" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${-s * .3}" cy="${s * .32}" r="${s * .19}" fill="${c}"/><circle cx="${s * .3}" cy="${s * .2}" r="${s * .19}" fill="${c}"/>`;
+    if (kind === 'trace') return `<path d="M${-s * .42} ${s * .42}L${-s * .32} ${s * .1}L${s * .26} ${-s * .48}L${s * .48} ${-s * .26}L${-s * .1} ${s * .32}Z" fill="${c}" stroke="${c}" stroke-width="1.5" stroke-linejoin="round"/><line x1="${s * .1}" y1="${-s * .32}" x2="${s * .32}" y2="${-s * .1}" stroke="#ffe89c" stroke-width="2.2"/>`;
+    if (kind === 'hearts') return `<text class="latin" y="${s * .3}" text-anchor="middle" font-size="${Math.round(s * .95)}" fill="${c}">Aa</text>`;
     return `<circle r="${s * .35}" fill="${c}"/>`;
   }
 
@@ -2098,36 +2268,7 @@ function createGame() {
     const x0 = 480 - (n * cw + (n - 1) * gap) / 2;
     const cardY = n >= 4 ? 126 : 118;
 
-    let cardsHtml = uxCardRow(words, cardY, cw, ch, gap);
-    if (isRainbow) {
-      const allAz = WORDS.filter(w => w.kind === 'core');
-      const fills = ['#ffe4f0', '#e4f4ff', '#fff3cc', '#ebfae8', '#f2e8ff', '#ffeede'];
-      const rims = ['#f287b7', '#6dbbe8', '#efb646', '#7ec476', '#a884e6', '#f29a5e'];
-      const rowLens = [7, 7, 6, 6];
-      let cursor = 0;
-      const wall = [];
-      rowLens.forEach((cnt, rIdx) => {
-        const bw = 96, bh = 74, bgap = 12;
-        const rx0 = 480 - (cnt * bw + (cnt - 1) * bgap) / 2;
-        const ry = 76 + rIdx * 86;
-        for (let k = 0; k < cnt && cursor < allAz.length; k++) {
-          const w = allAz[cursor++];
-          const bx = rx0 + k * (bw + bgap);
-          const ci = (rIdx * 7 + k) % fills.length;
-          wall.push(`<g class="ux-pop on"><g class="ux-btn" data-word="${w.id}" role="button" tabindex="0" aria-label="${w.en}" transform="translate(${bx} ${ry})">
-            <g class="btn-vis" filter="url(#softShadow)">
-              <rect width="${bw}" height="${bh}" rx="18" fill="${fills[ci]}" stroke="${rims[ci]}" stroke-width="3.2"/>
-              <text class="latin" x="${bw / 2 - 11}" y="47" text-anchor="middle" font-size="31" fill="#4e1f3a">${w.letter}</text>
-              <text class="latin" x="${bw / 2 + 17}" y="47" text-anchor="middle" font-size="23" fill="#8a4a6e">${w.lower}</text>
-            </g>
-          </g></g>`);
-        }
-      });
-      cardsHtml = `<g filter="url(#softShadow)">
-        <rect x="275" y="18" width="410" height="44" rx="22" fill="#13261b" opacity=".88" stroke="#ffd27a" stroke-width="2.5"/>
-        <text x="480" y="47" text-anchor="middle" font-size="22" fill="#fff7df">A – Z 字母彩虹墙（点字母听发音！）</text>
-      </g>` + wall.join('');
-    }
+    const cardsHtml = isRainbow ? '<g id="abcPianoMount"></g>' : uxCardRow(words, cardY, cw, ch, gap);
 
     const root = uxPaint(`<g class="page">
       <image href="${SRC(uxLineArt('ch_' + lv.id, lv.bg))}" width="960" height="520" preserveAspectRatio="xMidYMid slice"/>
@@ -2139,7 +2280,14 @@ function createGame() {
       </g>
       ${uxButton({ act: 'go', ui: 'next', icon: 'next', x: 886, y: 452, r: 38, plate: 'gold', cls: isRainbow ? 'ux-pulse' : '' })}
     </g>`);
-    const finish = () => uxEnd(s, done);
+    let pianoCtl = null;
+    if (isRainbow && typeof renderAbcPianoWall === 'function') {
+      pianoCtl = renderAbcPianoWall(root.querySelector('#abcPianoMount'), s, { standalone: false });
+    }
+    const finish = () => {
+      if (pianoCtl && pianoCtl.stop) pianoCtl.stop();
+      uxEnd(s, done);
+    };
     s.onKey = finish;
     uxBind(root, { go: finish, word: el => { uxNudge(el); uxWordVoice(el.dataset.word); uxConfetti(root.querySelector('.page'), 480, 220, 8); } });
     const cue = root.querySelector('#uxCue');
@@ -2492,17 +2640,19 @@ function createGame() {
     const quizOk = core.reduce((n, w) => n + ((save.words[w.id] && save.words[w.id].quiz) || 0), 0);
     const quizWrong = core.reduce((n, w) => n + ((save.words[w.id] && save.words[w.id].wrong) || 0), 0);
     const acc = quizOk + quizWrong > 0 ? Math.round((quizOk * 100) / (quizOk + quizWrong)) + '%' : '100%';
+    const traced = Object.keys(save.traced || {}).filter(k => save.traced[k]).length;
+    const matches = save.caseMatches || 0;
     const mins = Math.max(1, Math.round((save.totalPlaySeconds || 0) / 60));
 
     modal.innerHTML = `<rect width="960" height="520" fill="#0d1b13" opacity=".78"/>
-      <g transform="translate(220 75)" filter="url(#softShadow)">
-        <rect width="520" height="370" rx="28" fill="#fffaf0" stroke="#ffd27a" stroke-width="4"/>
-        <text x="260" y="48" text-anchor="middle" font-size="28" fill="#1c3526">家长设置与学习统计</text>
-        <text x="48" y="96" font-size="20" fill="#2d4c39">已听掌握字母：${heard} / ${core.length} · 测试首答率：${acc} · 累计探索：${mins} 分钟</text>
-        <g class="ux-btn" data-m="subs" transform="translate(48 130)"><rect width="424" height="52" rx="14" fill="#edf5ea" stroke="#9ac090" stroke-width="2"/><text x="24" y="33" font-size="20" fill="#1c3526">中英字幕显示：${setting('subtitles') ? '开启' : '关闭'}</text></g>
-        <g class="ux-btn" data-m="eng" transform="translate(48 196)"><rect width="424" height="52" rx="14" fill="#edf5ea" stroke="#9ac090" stroke-width="2"/><text x="24" y="33" font-size="20" fill="#1c3526">英文教学模式：${setting('english') === 'words+phrases' ? '字母 + 短句' : '仅字母和单词'}</text></g>
-        <g class="ux-btn" data-m="snd" transform="translate(48 262)"><rect width="202" height="52" rx="14" fill="#edf5ea" stroke="#9ac090" stroke-width="2"/><text x="24" y="33" font-size="20" fill="#1c3526">声音：${setting('sound') ? '开启' : '静音'}</text></g>
-        <g class="ux-btn" data-m="close" transform="translate(270 262)"><rect width="202" height="52" rx="14" fill="url(#goldGrad)" stroke="#d6a44e" stroke-width="2"/><text x="101" y="33" text-anchor="middle" font-size="22" fill="#4a2605">关闭返回</text></g>
+      <g transform="translate(200 70)" filter="url(#softShadow)">
+        <rect width="560" height="380" rx="28" fill="#fffaf0" stroke="#ffd27a" stroke-width="4"/>
+        <text x="280" y="48" text-anchor="middle" font-size="28" fill="#1c3526">家长设置与学习统计</text>
+        <text x="280" y="92" text-anchor="middle" font-size="18" fill="#2d4c39">已听字母：${heard}/${core.length} · 星光描红：${traced}/26 · 配对：${matches}次 · 首答率：${acc} · ${mins}分钟</text>
+        <g class="ux-btn" data-m="subs" transform="translate(48 130)"><rect width="464" height="52" rx="14" fill="#edf5ea" stroke="#9ac090" stroke-width="2"/><text x="24" y="33" font-size="20" fill="#1c3526">中英字幕显示：${setting('subtitles') ? '开启' : '关闭'}</text></g>
+        <g class="ux-btn" data-m="eng" transform="translate(48 196)"><rect width="464" height="52" rx="14" fill="#edf5ea" stroke="#9ac090" stroke-width="2"/><text x="24" y="33" font-size="20" fill="#1c3526">英文教学模式：${setting('english') === 'words+phrases' ? '字母 + 短句' : '仅字母和单词'}</text></g>
+        <g class="ux-btn" data-m="snd" transform="translate(48 262)"><rect width="222" height="52" rx="14" fill="#edf5ea" stroke="#9ac090" stroke-width="2"/><text x="24" y="33" font-size="20" fill="#1c3526">声音：${setting('sound') ? '开启' : '静音'}</text></g>
+        <g class="ux-btn" data-m="close" transform="translate(290 262)"><rect width="222" height="52" rx="14" fill="url(#goldGrad)" stroke="#d6a44e" stroke-width="2"/><text x="111" y="33" text-anchor="middle" font-size="22" fill="#4a2605">关闭返回</text></g>
       </g>`;
 
     const close = () => { uxState.modal = false; modal.textContent = ''; };
@@ -2516,8 +2666,596 @@ function createGame() {
       });
     });
   }
-  /* Rewards: Wordbook + Ear Listening Quiz (24 words across 2 pages), Sticker Treehouse Board, Meet & Pup Gear Locker (Wardrobe). */
-  const WARDROBE_UNLOCKS = { d1: 2, d2: 5, wreath: 8, detective: 12, crown: 16 };
+  /* 99-point Interactive Playgrounds: ABC Twinkle Rainbow Piano, Toddler Starlight Tracing & A<->a Case-Match Egg. */
+  let traceIntroSaid = false;
+
+  const PIANO_FILLS = ['#ffe4f0', '#e4f4ff', '#fff3cc', '#ebfae8', '#f2e8ff', '#ffeede'];
+  const PIANO_RIMS = ['#f287b7', '#6dbbe8', '#efb646', '#7ec476', '#a884e6', '#f29a5e'];
+
+  /* ---------- 1. ABC Song Twinkle Rainbow Piano Wall (Embeddable & Standalone) ---------- */
+  function renderAbcPianoWall(host, s, opts) {
+    const o = opts || {};
+    const notesById = Object.fromEntries(ABC_SONG_NOTES.map(n => [n.id, n]));
+    const wordsById = Object.fromEntries(WORDS.filter(w => w.kind === 'core').map(w => [w.id, w]));
+    const rows = [0, 1, 2, 3].map(r => ABC_SONG_NOTES.filter(n => n.row === r));
+    const specs = [
+      { bw: 94, bh: 72, gap: 10, y: 100 },
+      { bw: 78, bh: 72, gap: 8, y: 186 },
+      { bw: 98, bh: 72, gap: 12, y: 272 },
+      { bw: 112, bh: 72, gap: 14, y: 358 },
+    ];
+
+    let songTimer = 0;
+    let mode = 'free'; // 'free' | 'auto' | 'guide'
+    let guideIdx = 0;
+    let autoIdx = 0;
+
+    const pillW = o.standalone ? 440 : 410;
+    const pillX = o.standalone ? 190 : 275;
+    const pillHtml = `<g id="abcPreviewPill" filter="url(#softShadow)">
+      <rect x="${pillX}" y="16" width="${pillW}" height="64" rx="32" fill="#13261b" opacity=".9" stroke="#ffd27a" stroke-width="3"/>
+      <image id="abcPrevImg" href="${SRC('word_a')}" x="${pillX + 14}" y="22" width="52" height="52" preserveAspectRatio="xMidYMid meet" opacity="0"/>
+      <text id="abcPrevTxt" x="${pillX + pillW / 2}" y="55" text-anchor="middle" font-size="22" fill="#fff7df">A – Z 彩虹字母琴键（点一点会唱歌！）</text>
+    </g>`;
+
+    const backBtn = o.standalone ? uxButton({ act: 'back', ui: 'back', icon: 'back', x: 56, y: 48, r: 34 }) : '';
+    const songBtnX = o.standalone ? 772 : 760;
+    const guideBtnX = o.standalone ? 862 : 850;
+    const keysHtml = rows.map((rowNotes, rIdx) => {
+      const sp = specs[rIdx];
+      const rx0 = 480 - (rowNotes.length * sp.bw + (rowNotes.length - 1) * sp.gap) / 2;
+      return rowNotes.map((n, k) => {
+        const w = wordsById[n.id];
+        if (!w) return '';
+        const bx = rx0 + k * (sp.bw + sp.gap);
+        const ci = (rIdx * 7 + k) % PIANO_FILLS.length;
+        const hitR = sp.bw < 84 ? sp.bw + 6 : sp.bw;
+        return `<g class="ux-btn abc-key" data-pkey="${w.id}" role="button" tabindex="0" aria-label="${w.en}" transform="translate(${bx} ${sp.y})">
+          <rect x="${(sp.bw - hitR) / 2}" y="-4" width="${hitR}" height="${sp.bh + 8}" rx="18" fill="transparent"/>
+          <g class="btn-vis" filter="url(#softShadow)">
+            <rect class="key-bg" width="${sp.bw}" height="${sp.bh}" rx="18" fill="${PIANO_FILLS[ci]}" stroke="${PIANO_RIMS[ci]}" stroke-width="3.2"/>
+            <rect x="6" y="4" width="${sp.bw - 12}" height="18" rx="9" fill="#ffffff" opacity=".52"/>
+            <text class="latin" x="${sp.bw / 2 - 11}" y="44" text-anchor="middle" font-size="30" fill="#4e1f3a">${w.letter}</text>
+            <text class="latin" x="${sp.bw / 2 + 16}" y="44" text-anchor="middle" font-size="22" fill="#8a4a6e">${w.lower}</text>
+            <circle cx="${sp.bw / 2}" cy="60" r="3.5" fill="${PIANO_RIMS[ci]}" opacity=".75"/>
+          </g>
+          <rect class="guide-ring" x="-4" y="-4" width="${sp.bw + 8}" height="${sp.bh + 8}" rx="20" fill="none" stroke="#ffd27a" stroke-width="5" opacity="0" pointer-events="none"/>
+        </g>`;
+      }).join('');
+    }).join('');
+
+    host.innerHTML = `${pillHtml}${backBtn}
+      ${uxButton({ act: 'songPlay', ui: 'abc_song', icon: 'note', x: songBtnX, y: 48, r: 34, plate: 'gold' })}
+      ${uxButton({ act: 'songGuide', ui: 'hint', icon: 'sticker', x: guideBtnX, y: 48, r: 34 })}
+      <g id="abcKeysLayer">${keysHtml}</g>`;
+
+    const getKeyEl = id => host.querySelector(`[data-pkey="${id}"]`);
+    const updatePreview = id => {
+      const w = wordsById[id];
+      const imgEl = host.querySelector('#abcPrevImg');
+      const txtEl = host.querySelector('#abcPrevTxt');
+      if (!w || !txtEl) return;
+      if (imgEl) {
+        imgEl.setAttribute('href', SRC(w.icon || 'word_' + w.id));
+        imgEl.setAttribute('opacity', '1');
+      }
+      txtEl.setAttribute('class', 'latin');
+      txtEl.setAttribute('x', String(pillX + pillW / 2 + 22));
+      txtEl.setAttribute('font-size', '25');
+      txtEl.setAttribute('fill', '#ffe794');
+      txtEl.textContent = `${w.letter}${w.lower} · ${w.wordEn || w.en}`;
+    };
+
+    const flashKey = (id, boost) => {
+      const kEl = getKeyEl(id);
+      if (!kEl) return;
+      kEl.classList.remove('piano-hit');
+      void kEl.getBoundingClientRect();
+      kEl.classList.add('piano-hit');
+      const m = kEl.getAttribute('transform');
+      const mm = /translate\(([-\d.]+)\s+([-\d.]+)\)/.exec(m || '');
+      if (mm) {
+        const cx = Number(mm[1]) + 42;
+        const cy = Number(mm[2]) + 36;
+        uxConfetti(host.closest('.page') || host, cx, cy, boost ? 14 : 6);
+      }
+    };
+
+    const syncModeVisuals = () => {
+      host.querySelectorAll('.guide-ring').forEach(r => r.setAttribute('opacity', '0'));
+      host.querySelectorAll('.abc-key').forEach(k => k.classList.remove('ux-pulse'));
+      const btnAuto = host.querySelector('[data-act="songPlay"]');
+      const btnGuide = host.querySelector('[data-act="songGuide"]');
+      if (btnAuto) btnAuto.classList.toggle('ux-pulse', mode === 'auto');
+      if (btnGuide) btnGuide.classList.toggle('ux-pulse', mode === 'guide');
+      if (mode === 'guide' && guideIdx < ABC_SONG_NOTES.length) {
+        const tid = ABC_SONG_NOTES[guideIdx].id;
+        const kEl = getKeyEl(tid);
+        if (kEl) {
+          kEl.classList.add('ux-pulse');
+          const gr = kEl.querySelector('.guide-ring');
+          if (gr) gr.setAttribute('opacity', '1');
+        }
+      }
+    };
+
+    const stop = () => {
+      clearTimeout(songTimer);
+      songTimer = 0;
+      mode = 'free';
+      if (typeof setPianoDuck === 'function') setPianoDuck(false);
+      syncModeVisuals();
+    };
+
+    const stepAuto = () => {
+      if (!uxAlive(s) || mode !== 'auto') { stop(); return; }
+      if (autoIdx >= ABC_SONG_NOTES.length) {
+        uxSfx('gliss');
+        uxConfetti(host.closest('.page') || host, 480, 240, 36);
+        stop();
+        return;
+      }
+      const note = ABC_SONG_NOTES[autoIdx++];
+      playPianoNote(note.midi, note.beats >= 2);
+      updatePreview(note.id);
+      const phraseEnd = note.id === 'g' || note.id === 'p' || note.id === 'v' || note.id === 'z';
+      flashKey(note.id, phraseEnd);
+      songTimer = setTimeout(stepAuto, Math.round(note.beats * 430));
+    };
+
+    const toggleAuto = () => {
+      unlockAudio();
+      uxStopVoice();
+      if (mode === 'auto') { stop(); return; }
+      stop();
+      mode = 'auto';
+      autoIdx = 0;
+      if (typeof setPianoDuck === 'function') setPianoDuck(true);
+      syncModeVisuals();
+      stepAuto();
+    };
+
+    const toggleGuide = () => {
+      unlockAudio();
+      if (mode === 'guide') { stop(); return; }
+      stop();
+      mode = 'guide';
+      guideIdx = 0;
+      if (typeof setPianoDuck === 'function') setPianoDuck(true);
+      syncModeVisuals();
+      uxLine('abc_piano_guide', { interrupt: true, maxWait: 3000 });
+    };
+
+    host.querySelectorAll('[data-pkey]').forEach(kEl => {
+      const id = kEl.getAttribute('data-pkey');
+      const press = () => {
+        if (!uxAlive(s)) return;
+        unlockAudio();
+        if (mode === 'auto') stop();
+        const note = notesById[id];
+        if (note) playPianoNote(note.midi, note.beats >= 2);
+        updatePreview(id);
+        flashKey(id, false);
+        uxWordVoice(id);
+        if (mode === 'guide') {
+          const target = ABC_SONG_NOTES[guideIdx];
+          if (target && target.id === id) {
+            guideIdx++;
+            if (guideIdx >= ABC_SONG_NOTES.length) {
+              save.abcSongs = (save.abcSongs || 0) + 1;
+              saveWrite();
+              stop();
+              uxSfx('gliss');
+              uxConfetti(host.closest('.page') || host, 340, 220, 26);
+              uxConfetti(host.closest('.page') || host, 620, 220, 26);
+              uxLine('abc_piano_win', { maxWait: 4500 });
+              return;
+            }
+            syncModeVisuals();
+          } else {
+            syncModeVisuals();
+          }
+        }
+      };
+      kEl.addEventListener('click', press);
+      kEl.addEventListener('keydown', /** @param {KeyboardEvent} e */ e => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); press(); }
+      });
+    });
+
+    const bAuto = host.querySelector('[data-act="songPlay"]');
+    if (bAuto) {
+      bAuto.addEventListener('click', toggleAuto);
+      bAuto.addEventListener('keydown', /** @param {KeyboardEvent} e */ e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleAuto(); } });
+    }
+    const bGuide = host.querySelector('[data-act="songGuide"]');
+    if (bGuide) {
+      bGuide.addEventListener('click', toggleGuide);
+      bGuide.addEventListener('keydown', /** @param {KeyboardEvent} e */ e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleGuide(); } });
+    }
+
+    return { stop, toggleAuto, toggleGuide };
+  }
+
+  function showAbcPiano(returnFn) {
+    const s = uxScreen('abcPiano');
+    const root = uxPaint(`<g class="page">
+      <image href="${SRC('bg_canopy')}" width="960" height="520" preserveAspectRatio="xMidYMid slice"/>
+      <rect width="960" height="520" fill="#112219" opacity=".54"/>
+      <g id="abcPianoHost"></g>
+    </g>`);
+    const host = root.querySelector('#abcPianoHost');
+    const ctl = renderAbcPianoWall(host, s, { standalone: true });
+    const back = () => {
+      ctl.stop();
+      uxEnd(s, () => (typeof returnFn === 'function' ? returnFn() : showTitle()));
+    };
+    s.onKey = back;
+    const backBtn = root.querySelector('[data-act="back"]');
+    if (backBtn) {
+      backBtn.addEventListener('click', back);
+      backBtn.addEventListener('keydown', /** @param {KeyboardEvent} e */ e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); back(); } });
+    }
+    uxLine('abc_piano_intro', { maxWait: 4500 });
+  }
+
+  /* ---------- 2. Ultra-Forgiving Toddler Starlight Letter Tracing ---------- */
+  function ptsToPath(pts) {
+    if (!pts || !pts.length) return '';
+    return pts.map((p, i) => `${i ? 'L' : 'M'}${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' ');
+  }
+
+  function showTrace(letterId, onDone, opts) {
+    const o = opts || {};
+    const core = WORDS.filter(w => w.kind === 'core');
+    let curIdx = Math.max(0, core.findIndex(w => w.id === letterId));
+    const s = uxScreen('trace');
+
+    const renderLetter = () => {
+      if (!uxAlive(s)) return;
+      const w = core[curIdx] || core[0];
+      const lid = w.id;
+      const rawStrokes = LETTER_STROKES[lid] || LETTER_STROKES.a;
+      const boxX = 223, boxY = 116, boxSize = 290;
+      const projStrokes = rawStrokes.map(st => traceProjectStroke(st, boxX, boxY, boxSize));
+      const checkpoints = projStrokes.map(st => traceSampleStroke(st, 11));
+      let activeStroke = 0;
+      let prog = 0;
+      let finished = false;
+      let drawing = false;
+      const tracedCount = Object.keys(save.traced || {}).filter(k => save.traced[k]).length;
+
+      const tracksHtml = projStrokes.map((st, idx) => {
+        const d = ptsToPath(st);
+        return `<path d="${d}" fill="none" stroke="#ead8b8" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="${d}" fill="none" stroke="#cbb286" stroke-width="3" stroke-dasharray="8 9" stroke-linecap="round"/>
+          <g class="trace-num" data-num="${idx}" opacity="${idx === 0 ? '1' : '.42'}" transform="translate(${st[0][0].toFixed(1)} ${st[0][1].toFixed(1)})">
+            <circle r="13" fill="#ff85b3" stroke="#fffaf0" stroke-width="2.5"/>
+            <text class="latin" y="5" text-anchor="middle" font-size="14" fill="#ffffff">${idx + 1}</text>
+          </g>`;
+      }).join('');
+
+      const navBtns = o.single
+        ? uxButton({ act: 'reset', ui: 'replay', icon: 'replay', x: 682, y: 428, r: 34 }) +
+          uxButton({ act: 'finishDone', ui: 'next', icon: 'next', x: 800, y: 428, r: 38, plate: 'gold' })
+        : uxButton({ act: 'prevL', ui: 'back', icon: 'back', x: 640, y: 428, r: 34 }) +
+          uxButton({ act: 'reset', ui: 'replay', icon: 'replay', x: 742, y: 428, r: 34 }) +
+          uxButton({ act: 'nextL', ui: 'next', icon: 'next', x: 844, y: 428, r: 34, plate: 'gold' });
+
+      const root = uxPaint(`<g class="page">
+        <image href="${SRC('bg_woods')}" width="960" height="520" preserveAspectRatio="xMidYMid slice"/>
+        <rect width="960" height="520" fill="#112219" opacity=".58"/>
+        ${uxButton({ act: 'back', ui: 'back', icon: 'back', x: 56, y: 48, r: 34 })}
+        <g filter="url(#softShadow)">
+          <rect x="275" y="16" width="410" height="42" rx="21" fill="#13261b" opacity=".88" stroke="#ffd27a" stroke-width="2.5"/>
+          <text id="traceBanner" x="480" y="44" text-anchor="middle" font-size="21" fill="#fff7df">跟着发光小星星写字母（${w.letter}${w.lower} · ${tracedCount}/26）</text>
+        </g>
+
+        <g id="traceBoardGroup" filter="url(#softShadow)">
+          <rect x="148" y="68" width="440" height="394" rx="34" fill="#fffaf0" stroke="#e4b457" stroke-width="5"/>
+          <line x1="184" y1="151" x2="552" y2="151" stroke="#f0dfbe" stroke-width="2" stroke-dasharray="8 8"/>
+          <line x1="184" y1="261" x2="552" y2="261" stroke="#f5e7ca" stroke-width="2" stroke-dasharray="6 8"/>
+          <line x1="184" y1="371" x2="552" y2="371" stroke="#f0dfbe" stroke-width="2.5"/>
+          <g id="traceTracks">${tracksHtml}</g>
+          <g id="traceDoneGroup"></g>
+          <path id="traceProgPath" d="" fill="none" stroke="#ff7cb8" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+          <path id="traceProgCore" d="" fill="none" stroke="#ffd27a" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+          <g id="traceStar" transform="translate(${checkpoints[0][0][0].toFixed(1)} ${checkpoints[0][0][1].toFixed(1)})" pointer-events="none">
+            <circle class="ux-ripple" r="22" fill="none" stroke="#ffd27a" stroke-width="4"/>
+            <circle r="19" fill="#ffe89c" opacity=".38"/>
+            <path d="${UX_STAR_D}" transform="scale(18)" fill="url(#goldGrad)" stroke="#b85a12" stroke-width=".07"/>
+          </g>
+          <rect id="traceHit" x="148" y="68" width="440" height="394" rx="34" fill="transparent" style="touch-action:none;cursor:crosshair"/>
+        </g>
+
+        <g id="traceMascotCard" class="ux-btn" data-word="${lid}" role="button" tabindex="0" transform="translate(624 84)">
+          <g class="btn-vis" filter="url(#softShadow)">
+            <rect width="236" height="278" rx="28" fill="#fffaf0" stroke="#f287b7" stroke-width="4"/>
+            <rect x="52" y="14" width="132" height="44" rx="22" fill="#ffe5f1" stroke="#f287b7" stroke-width="2.5"/>
+            <text class="latin" x="118" y="45" text-anchor="middle" font-size="32" fill="#b8326a">${w.letter}${w.lower}</text>
+            <image href="${SRC(w.icon || 'word_' + lid)}" x="43" y="66" width="150" height="148" preserveAspectRatio="xMidYMid meet"/>
+            <text class="latin" x="118" y="254" text-anchor="middle" font-size="28" fill="#2b1f09">${w.wordEn || w.en}</text>
+          </g>
+        </g>
+        <g id="tracePrize" opacity="0" transform="translate(836 84)" pointer-events="none">
+          <circle r="30" fill="#ffe4f0" stroke="#ffd27a" stroke-width="3"/>
+          <image href="${SRC('hat_bow')}" x="-24" y="-20" width="48" height="40" preserveAspectRatio="xMidYMid meet"/>
+        </g>
+        ${navBtns}
+      </g>`);
+
+      const doneGroup = root.querySelector('#traceDoneGroup');
+      const progPath = root.querySelector('#traceProgPath');
+      const progCore = root.querySelector('#traceProgCore');
+      const starEl = root.querySelector('#traceStar');
+      const hitEl = root.querySelector('#traceHit');
+
+      const syncStar = () => {
+        if (!starEl) return;
+        if (finished || activeStroke >= checkpoints.length) {
+          starEl.setAttribute('opacity', '0');
+          return;
+        }
+        const cp = checkpoints[activeStroke];
+        const pt = cp[Math.min(prog, cp.length - 1)];
+        starEl.setAttribute('opacity', '1');
+        starEl.setAttribute('transform', `translate(${pt[0].toFixed(1)} ${pt[1].toFixed(1)})`);
+        root.querySelectorAll('.trace-num').forEach(n => {
+          const ni = Number(n.getAttribute('data-num'));
+          n.setAttribute('opacity', ni < activeStroke ? '0' : (ni === activeStroke ? '1' : '.42'));
+        });
+      };
+
+      const renderProgressPath = () => {
+        const cp = checkpoints[activeStroke] || [];
+        const slice = prog > 0 ? cp.slice(0, Math.min(prog, cp.length)) : [];
+        const d = ptsToPath(slice);
+        if (progPath) progPath.setAttribute('d', d);
+        if (progCore) progCore.setAttribute('d', d);
+      };
+
+      const completeLetter = () => {
+        if (finished) return;
+        finished = true;
+        drawing = false;
+        syncStar();
+        const hadCount = Object.keys(save.traced || {}).filter(k => save.traced[k]).length;
+        if (!save.traced) save.traced = {};
+        save.traced[lid] = true;
+        saveWrite();
+        const newCount = Object.keys(save.traced).filter(k => save.traced[k]).length;
+        const banner = root.querySelector('#traceBanner');
+        if (banner) banner.textContent = `太棒了！${w.letter}${w.lower} 描红完成（${newCount}/26）`;
+        if (hadCount < 3 && newCount >= 3) {
+          const pz = root.querySelector('#tracePrize');
+          if (pz) pz.setAttribute('opacity', '1');
+        }
+        uxNudge(root.querySelector('#traceMascotCard'));
+        uxSfx('gliss');
+        uxConfetti(root.querySelector('.page'), 368, 250, 34);
+        uxConfetti(root.querySelector('.page'), 742, 220, 22);
+        const nextBtn = root.querySelector('[data-act="nextL"], [data-act="finishDone"]');
+        if (nextBtn) nextBtn.classList.add('ux-pulse');
+        uxWordVoice(lid);
+        uxLine('trace_done_' + (1 + Math.floor(Math.random() * 2)), { maxWait: 4000 });
+      };
+
+      const stepPoint = (sx, sy) => {
+        if (!uxAlive(s) || finished || activeStroke >= checkpoints.length) return;
+        const cp = checkpoints[activeStroke];
+        const nextProg = traceAdvance(cp, prog, sx, sy, 58);
+        if (nextProg <= prog) return;
+        prog = nextProg;
+        playPianoNote(60 + ((prog + activeStroke * 3) % 12), false);
+        const curPt = cp[Math.min(prog - 1, cp.length - 1)];
+        uxConfetti(root.querySelector('.page'), curPt[0], curPt[1], 4);
+        renderProgressPath();
+        if (prog >= cp.length) {
+          const fullD = ptsToPath(projStrokes[activeStroke]);
+          if (doneGroup) {
+            doneGroup.insertAdjacentHTML('beforeend',
+              `<path d="${fullD}" fill="none" stroke="#ff7cb8" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+               <path d="${fullD}" fill="none" stroke="#ffd27a" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>`);
+          }
+          if (progPath) progPath.setAttribute('d', '');
+          if (progCore) progCore.setAttribute('d', '');
+          uxSfx('stone_ok');
+          uxConfetti(root.querySelector('.page'), curPt[0], curPt[1], 14);
+          activeStroke++;
+          prog = 0;
+          if (activeStroke >= checkpoints.length) {
+            completeLetter();
+            return;
+          }
+        }
+        syncStar();
+      };
+
+      const toStagePt = e => {
+        const svg = /** @type {SVGSVGElement} */ (/** @type {unknown} */ ($('stage')));
+        const ctm = svg && svg.getScreenCTM && svg.getScreenCTM();
+        if (svg && ctm && svg.createSVGPoint) {
+          const pt = svg.createSVGPoint();
+          pt.x = e.clientX; pt.y = e.clientY;
+          return pt.matrixTransform(ctm.inverse());
+        }
+        return { x: e.clientX || 0, y: e.clientY || 0 };
+      };
+
+      if (hitEl) {
+        hitEl.addEventListener('pointerdown', /** @param {PointerEvent} e */ e => {
+          if (finished) return;
+          unlockAudio();
+          drawing = true;
+          try { if (hitEl.setPointerCapture) hitEl.setPointerCapture(e.pointerId); } catch (_) {}
+          const pt = toStagePt(e);
+          stepPoint(pt.x, pt.y);
+        });
+        hitEl.addEventListener('pointermove', /** @param {PointerEvent} e */ e => {
+          if (!drawing || finished) return;
+          const pt = toStagePt(e);
+          stepPoint(pt.x, pt.y);
+        });
+        const endDraw = () => { drawing = false; };
+        hitEl.addEventListener('pointerup', endDraw);
+        hitEl.addEventListener('pointercancel', endDraw);
+      }
+
+      const closeTrace = () => uxEnd(s, () => (typeof onDone === 'function' ? onDone() : showTitle()));
+      s.onKey = closeTrace;
+      uxBind(root, {
+        back: closeTrace,
+        finishDone: closeTrace,
+        reset: () => { uxSfx('tap'); renderLetter(); },
+        prevL: () => { curIdx = (curIdx - 1 + core.length) % core.length; uxSfx('page'); renderLetter(); uxWordVoice(core[curIdx].id); },
+        nextL: () => { curIdx = (curIdx + 1) % core.length; uxSfx('page'); renderLetter(); uxWordVoice(core[curIdx].id); },
+        word: card => { uxNudge(card); uxWordVoice(lid); },
+      });
+    };
+
+    renderLetter();
+    if (!traceIntroSaid) {
+      traceIntroSaid = true;
+      uxLine('trace_intro', { maxWait: 4000 });
+    } else {
+      uxWordVoice(letterId);
+    }
+  }
+
+  /* ---------- 3. A <-> a Uppercase/Lowercase Hand-in-Hand Match ---------- */
+  function showCaseMatch(onDone) {
+    const core = WORDS.filter(w => w.kind === 'core');
+    const learned = core.filter(w => save.words[w.id] && (save.words[w.id].heard > 0 || save.words[w.id].seen));
+    const seedIds = ['a', 'b', 'd', 'e', 'g', 'h', 'm', 'n', 'q', 'r'];
+    const pool = [...learned];
+    for (const id of seedIds) {
+      const obj = core.find(w => w.id === id);
+      if (obj && !pool.some(x => x.id === id)) pool.push(obj);
+    }
+    const shuffled = pool.slice().sort(() => Math.random() - .5).slice(0, 4);
+    const s = uxScreen('caseMatch');
+    let roundIdx = 0;
+
+    const renderRound = () => {
+      if (!uxAlive(s)) return;
+      if (roundIdx >= shuffled.length) {
+        save.caseMatches = (save.caseMatches || 0) + 1;
+        saveWrite();
+        const root = uxPaint(`<g class="page">
+          <image href="${SRC('bg_meadow')}" width="960" height="520" preserveAspectRatio="xMidYMid slice"/>
+          <rect width="960" height="520" fill="#112219" opacity=".52"/>
+          <rect x="230" y="96" width="500" height="260" rx="34" fill="#fffaf0" stroke="#ffd27a" stroke-width="5" filter="url(#softShadow)"/>
+          <image href="${SRC('hat_butterfly')}" x="415" y="114" width="130" height="114" preserveAspectRatio="xMidYMid meet" class="ux-anim-pulse"/>
+          <text x="480" y="274" text-anchor="middle" font-size="30" fill="#b8326a">大小写全部牵手成功！</text>
+          <text x="480" y="316" text-anchor="middle" font-size="20" fill="#3b5e46">装扮间蝴蝶发箍彩蛋已解锁（已完成 ${save.caseMatches} 次）</text>
+          ${uxButton({ act: 'again', ui: 'replay', icon: 'replay', x: 392, y: 426, r: 38 })}
+          ${uxButton({ act: 'back', ui: 'next', icon: 'home', x: 568, y: 426, r: 42, plate: 'gold', cls: 'ux-pulse' })}
+        </g>`);
+        const finish = () => uxEnd(s, () => (typeof onDone === 'function' ? onDone() : showTitle()));
+        s.onKey = finish;
+        uxBind(root, { again: () => showCaseMatch(onDone), back: finish });
+        uxSfx('gliss');
+        uxConfetti(root.querySelector('.page'), 340, 200, 28);
+        uxConfetti(root.querySelector('.page'), 620, 200, 28);
+        uxLine('match_done', { maxWait: 4500 });
+        return;
+      }
+
+      const target = shuffled[roundIdx];
+      const distractors = core.filter(w => w.id !== target.id).sort(() => Math.random() - .5).slice(0, 2);
+      const choices = [target, ...distractors].sort(() => Math.random() - .5);
+      let assist = false;
+      let locked = false;
+
+      const palette = [['#ffe5f1', '#f287b7'], ['#e4f4ff', '#6dbbe8'], ['#fff3cc', '#efb646']];
+      const xs = [250, 480, 710];
+      const dots = shuffled.map((_, i) => `<circle cx="${480 + (i - 1.5) * 28}" cy="38" r="${i < roundIdx ? 7 : (i === roundIdx ? 9 : 6)}" fill="${i <= roundIdx ? '#ffd27a' : '#587863'}" stroke="#fff7e6" stroke-width="2"/>`).join('');
+
+      const choiceHtml = choices.map((c, idx) => {
+        const [bgCol, rimCol] = palette[idx % palette.length];
+        return `<g class="stone-btn" data-pick="${c.id}" role="button" tabindex="0" aria-label="${c.lower}" transform="translate(${xs[idx]} 398)">
+          <rect x="-80" y="-56" width="160" height="112" rx="28" fill="transparent"/>
+          <rect class="match-assist" x="-80" y="-56" width="160" height="112" rx="28" fill="none" stroke="#ffd27a" stroke-width="5" opacity="0"/>
+          <g class="stone-vis" filter="url(#softShadow)">
+            <rect x="-74" y="-50" width="148" height="100" rx="24" fill="${bgCol}" stroke="${rimCol}" stroke-width="4.5"/>
+            <rect x="-66" y="-42" width="132" height="84" rx="18" fill="#ffffff" opacity=".55"/>
+            <text class="latin" x="0" y="22" text-anchor="middle" font-size="60" fill="#4e1f3a">${c.lower}</text>
+          </g>
+        </g>`;
+      }).join('');
+
+      const root = uxPaint(`<g class="page">
+        <image href="${SRC('bg_meadow')}" width="960" height="520" preserveAspectRatio="xMidYMid slice"/>
+        <rect width="960" height="520" fill="#112219" opacity=".48"/>
+        ${uxButton({ act: 'back', ui: 'back', icon: 'back', x: 56, y: 48, r: 34 })}
+        ${dots}
+        <g class="ux-btn" data-word="${target.id}" role="button" tabindex="0" transform="translate(200 94)">
+          <g class="btn-vis" filter="url(#softShadow)">
+            <rect width="196" height="196" rx="28" fill="#fffaf0" stroke="#f287b7" stroke-width="4.5"/>
+            <text class="latin" x="98" y="114" text-anchor="middle" font-size="88" fill="#b8326a">${target.letter}</text>
+            <text class="latin" x="98" y="168" text-anchor="middle" font-size="24" fill="#36260b">${target.wordEn || target.en}</text>
+          </g>
+        </g>
+        <line x1="406" y1="192" x2="554" y2="192" stroke="#ffd27a" stroke-width="5" stroke-dasharray="10 8" stroke-linecap="round"/>
+        <image id="matchHeart" href="${SRC('fx_heart')}" x="454" y="166" width="52" height="52" opacity=".45" preserveAspectRatio="xMidYMid meet"/>
+        <g transform="translate(564 94)" filter="url(#softShadow)">
+          <rect id="matchTargetBg" width="196" height="196" rx="28" fill="#fffaf0" fill-opacity=".86" stroke="#ffd27a" stroke-width="4" stroke-dasharray="10 6"/>
+          <image href="${SRC(target.icon || 'word_' + target.id)}" x="58" y="24" width="80" height="80" preserveAspectRatio="xMidYMid meet"/>
+          <text id="matchTargetTxt" class="latin" x="98" y="168" text-anchor="middle" font-size="68" fill="#9a7b42">?</text>
+        </g>
+        ${choiceHtml}
+      </g>`);
+
+      const back = () => uxEnd(s, () => (typeof onDone === 'function' ? onDone() : showTitle()));
+      s.onKey = back;
+      uxBind(root, { back, word: el => { uxNudge(el); uxWordVoice(target.id); } });
+      if (roundIdx === 0) uxLine('match_intro', { maxWait: 4000 });
+      else uxWordVoice(target.id);
+
+      root.querySelectorAll('[data-pick]').forEach(btn => {
+        const pid = btn.getAttribute('data-pick');
+        const pick = () => {
+          if (!uxAlive(s) || locked) return;
+          unlockAudio();
+          if (pid === target.id) {
+            locked = true;
+            const heart = root.querySelector('#matchHeart');
+            const tBg = root.querySelector('#matchTargetBg');
+            const tTxt = root.querySelector('#matchTargetTxt');
+            if (heart) { heart.setAttribute('opacity', '1'); heart.setAttribute('class', 'ux-anim-pulse'); }
+            if (tBg) { tBg.removeAttribute('stroke-dasharray'); tBg.setAttribute('fill', '#fff3cc'); tBg.setAttribute('fill-opacity', '1'); tBg.setAttribute('stroke', '#f287b7'); }
+            if (tTxt) { tTxt.setAttribute('fill', '#4e1f3a'); tTxt.textContent = target.lower; }
+            uxSfx('blend');
+            uxConfetti(root.querySelector('.page'), 480, 192, 26);
+            uxWordVoice(target.id);
+            setTimeout(() => {
+              if (!uxAlive(s)) return;
+              roundIdx++;
+              renderRound();
+            }, 1350);
+          } else {
+            uxSfx('wrong');
+            uxNudge(btn);
+            if (!assist) {
+              assist = true;
+              const rightBtn = root.querySelector(`[data-pick="${target.id}"]`);
+              if (rightBtn) {
+                rightBtn.classList.add('ux-pulse');
+                const ring = rightBtn.querySelector('.match-assist');
+                if (ring) ring.setAttribute('opacity', '1');
+              }
+            }
+          }
+        };
+        btn.addEventListener('click', pick);
+        btn.addEventListener('keydown', /** @param {KeyboardEvent} e */ e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
+      });
+    };
+
+    renderRound();
+  }
+  /* Rewards: 26-Letter Alphabet Book + Mini-Game Launchers, Sticker Treehouse Board, Meet & 5-Hat Wardrobe. */
+  const WARDROBE_UNLOCKS = { d1: 2, d2: 5, bow: 3, wreath: 8, butterfly: 10, detective: 12, crown: 16 };
 
   function totalStarsCount() {
     let n = 0;
@@ -2528,7 +3266,7 @@ function createGame() {
     return n;
   }
 
-  /* ---------- 26-Letter Alphabet Book (26 letters across 3 spacious 3x3 pages, cards 238x112 -> ~250x118 CSS px) ---------- */
+  /* ---------- 26-Letter Alphabet Book + Interactive Playgrounds ---------- */
   function showWords() {
     const core = WORDS.filter(w => w.kind === 'core');
     const pages = Math.max(1, Math.ceil(core.length / 9));
@@ -2537,16 +3275,22 @@ function createGame() {
     const render = () => {
       if (!uxAlive(s)) return;
       const slice = core.slice(pageIdx * 9, pageIdx * 9 + 9);
+      const tracedCount = Object.keys(save.traced || {}).filter(k => save.traced[k]).length;
       const cards = slice.map((w, i) => {
         const col = i % 3, row = (i / 3) | 0;
-        const x = 104 + col * 256, y = 92 + row * 124;
+        const x = 104 + col * 256, y = 94 + row * 122;
         const learned = !!(save.words[w.id] && (save.words[w.id].heard > 0 || save.words[w.id].seen));
+        const traced = !!(save.traced && save.traced[w.id]);
         return `<g class="ux-btn" data-word="${w.id}" role="button" tabindex="0" aria-label="${w.en}" transform="translate(${x} ${y})">
           <g class="btn-vis" filter="url(#softShadow)">
-            <rect width="238" height="112" rx="20" fill="${learned ? '#fffaf0' : '#1b3124'}" stroke="${learned ? '#ffd27a' : '#4a6b56'}" stroke-width="3"/>
-            <image href="${SRC(w.icon || 'word_' + w.id)}" x="14" y="16" width="78" height="78" preserveAspectRatio="xMidYMid meet" ${learned ? '' : 'filter="url(#silhouette)" opacity=".5"'}/>
-            <text class="latin" x="164" y="54" text-anchor="middle" font-size="30" fill="${learned ? '#b8326a' : '#73917e'}">${learned ? (w.letter ? w.letter + w.lower : w.en) : '???'}</text>
-            <text class="latin" x="164" y="84" text-anchor="middle" font-size="18" fill="${learned ? '#36260b' : '#73917e'}">${learned ? (w.wordEn || '') : ''}</text>
+            <rect width="238" height="110" rx="20" fill="${learned ? '#fffaf0' : '#1b3124'}" stroke="${traced ? '#f287b7' : (learned ? '#ffd27a' : '#4a6b56')}" stroke-width="3"/>
+            <image href="${SRC(w.icon || 'word_' + w.id)}" x="12" y="15" width="78" height="78" preserveAspectRatio="xMidYMid meet" ${learned ? '' : 'filter="url(#silhouette)" opacity=".5"'}/>
+            <text class="latin" x="148" y="53" text-anchor="middle" font-size="30" fill="${learned ? '#b8326a' : '#73917e'}">${learned ? (w.letter ? w.letter + w.lower : w.en) : '???'}</text>
+            <text class="latin" x="148" y="83" text-anchor="middle" font-size="18" fill="${learned ? '#36260b' : '#73917e'}">${learned ? (w.wordEn || '') : ''}</text>
+            <g class="ux-btn" data-trace="${w.id}" role="button" tabindex="0" aria-label="描红 ${w.letter}" transform="translate(212 24)">
+              <circle r="17" fill="${traced ? '#ffd27a' : '#ffe5f1'}" stroke="${traced ? '#e89d2f' : '#f287b7'}" stroke-width="2"/>
+              <text x="0" y="6" text-anchor="middle" font-size="15" fill="#7a2c4f">${traced ? '★' : '✎'}</text>
+            </g>
           </g>
         </g>`;
       }).join('');
@@ -2556,6 +3300,13 @@ function createGame() {
         <image href="${SRC('bg_woods')}" width="960" height="520" preserveAspectRatio="xMidYMid slice"/>
         <rect width="960" height="520" fill="#112219" opacity=".68"/>
         ${uxButton({ act: 'back', ui: 'back', icon: 'back', x: 56, y: 48, r: 34 })}
+        <g filter="url(#softShadow)">
+          <rect x="164" y="25" width="320" height="46" rx="23" fill="#13261b" opacity=".88" stroke="#ffd27a" stroke-width="2.5"/>
+          <text x="324" y="55" text-anchor="middle" font-size="22" fill="#fff7df">26 字母图鉴（星光描红 ${tracedCount}/26）</text>
+        </g>
+        ${uxButton({ act: 'abcSong', ui: 'abc_song', icon: 'note', x: 644, y: 48, r: 32, plate: 'gold' })}
+        ${uxButton({ act: 'traceMode', ui: 'trace', icon: 'trace', x: 736, y: 48, r: 32 })}
+        ${uxButton({ act: 'caseMatch', ui: 'case_match', icon: 'hearts', x: 828, y: 48, r: 32 })}
         ${pageDots}
         ${uxButton({ act: 'pageNext', ui: 'next', icon: pageIdx < pages - 1 ? 'next' : 'back', x: 902, y: 268, r: 34, plate: 'gold' })}
         ${cards}
@@ -2565,10 +3316,22 @@ function createGame() {
       const handlers = {
         back,
         pageNext: () => { pageIdx = (pageIdx + 1) % pages; render(); },
-        word: card => { uxNudge(card); uxWordVoice(card.getAttribute('data-word')); },
+        abcSong: () => uxEnd(s, () => { if (typeof showAbcPiano === 'function') showAbcPiano(() => showWords()); else showTitle(); }),
+        traceMode: () => uxEnd(s, () => { if (typeof showTrace === 'function') showTrace((slice[0] && slice[0].id) || 'a', () => showWords()); else showTitle(); }),
+        caseMatch: () => uxEnd(s, () => { if (typeof showCaseMatch === 'function') showCaseMatch(() => showWords()); else showTitle(); }),
+        word: card => { uxNudge(card); uxWordVoice(card.getAttribute('data-word')); uxConfetti(root.querySelector('.page'), 480, 250, 8); },
       };
       for (let p = 0; p < pages; p++) handlers['pg' + p] = () => { pageIdx = p; render(); };
       uxBind(root, handlers);
+      root.querySelectorAll('[data-trace]').forEach(tBtn => {
+        const lid = tBtn.getAttribute('data-trace');
+        const goTrace = e => {
+          e.stopPropagation();
+          uxEnd(s, () => { if (typeof showTrace === 'function') showTrace(lid, () => showWords()); else showWords(); });
+        };
+        tBtn.addEventListener('click', goTrace);
+        tBtn.addEventListener('keydown', /** @param {KeyboardEvent} e */ e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goTrace(e); } });
+      });
     };
     render();
   }
@@ -2597,8 +3360,12 @@ function createGame() {
       const tray = allTray.slice(trayPage * perPage, trayPage * perPage + perPage);
       const placed = (save.board || []).map((b, i) => {
         const tilt = ((i % 5) - 2) * 5;
-        return `<g class="ux-btn" data-placed="${i}" transform="translate(${b.x} ${b.y}) rotate(${tilt})">
+        const w = core.find(x => x.id === b.id);
+        const on = selected === b.id;
+        return `<g class="ux-btn" data-placed="${b.id}" role="button" tabindex="0" transform="translate(${b.x} ${b.y}) rotate(${tilt})">
           <image href="${SRC('word_' + b.id)}" x="-42" y="-42" width="84" height="84" preserveAspectRatio="xMidYMid meet" filter="url(#softShadow)"/>
+          <rect x="-22" y="28" width="44" height="19" rx="9" fill="${on ? '#ffd27a' : '#ffe5f1'}" stroke="#f287b7" stroke-width="1.6"/>
+          <text class="latin" x="0" y="42" text-anchor="middle" font-size="13" fill="#4e1f3a">${w ? w.letter + w.lower : b.id}</text>
         </g>`;
       }).join('');
       const trayHtml = tray.map((w, i) => {
@@ -2638,6 +3405,17 @@ function createGame() {
         };
         btn.addEventListener('click', choose);
         btn.addEventListener('keydown', /** @param {KeyboardEvent} e */ e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); choose(); } });
+      });
+      root.querySelectorAll('[data-placed]').forEach(pEl => {
+        const wid = pEl.getAttribute('data-placed');
+        const pickPlaced = () => {
+          selected = wid;
+          uxWordVoice(wid);
+          uxSfx('tap');
+          render();
+        };
+        pEl.addEventListener('click', pickPlaced);
+        pEl.addEventListener('keydown', /** @param {KeyboardEvent} e */ e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pickPlaced(); } });
       });
       if (board) {
         board.addEventListener('click', /** @param {MouseEvent} e */ e => {
@@ -2686,11 +3464,21 @@ function createGame() {
     uxLine('me_labrador');
   }
 
-  /* ---------- Pup Gear Locker / Wardrobe ---------- */
+  /* ---------- Pup Gear Locker / Wardrobe (3 Outfits + 5 Hats including Girl Bow & Butterfly Headband) ---------- */
   function showWardrobe(fromMeet) {
     const s = uxScreen('wardrobe');
     const stars = totalStarsCount();
-    const hats = ['wreath', 'detective', 'crown'];
+    const tracedCount = Object.keys(save.traced || {}).filter(k => save.traced[k]).length;
+    const hatRows = [[null, 'bow', 'wreath'], ['butterfly', 'detective', 'crown']];
+    const hatHint = { bow: '★3/✎3', wreath: '★8', butterfly: 'Aa/★10', detective: '★12', crown: '★16' };
+    const isHatOpen = h => {
+      if (!h) return true;
+      if (h === 'bow') return stars >= WARDROBE_UNLOCKS.bow || tracedCount >= 3;
+      if (h === 'butterfly') return stars >= WARDROBE_UNLOCKS.butterfly || (save.caseMatches || 0) >= 1;
+      return stars >= WARDROBE_UNLOCKS[h];
+    };
+    loadArt(['hat_bow', 'hat_wreath', 'hat_butterfly', 'hat_detective', 'hat_crown'], 1200);
+
     const render = () => {
       if (!uxAlive(s)) return;
       const oS = save.outfit.skye, oL = save.outfit.labrador;
@@ -2698,33 +3486,34 @@ function createGame() {
         const need = d === 0 ? 0 : (d === 1 ? WARDROBE_UNLOCKS.d1 : WARDROBE_UNLOCKS.d2);
         const open = stars >= need, active = save.outfit[who].dress === d;
         const cols = who === 'skye' ? ['#ff7cb8', '#5ecbff', '#a48bff'] : ['#2e4c85', '#34945e', '#c94b5b'];
-        return `<g class="ux-btn" data-who="${who}" data-kind="dress" data-val="${d}" data-state="${open ? (active ? 'on' : 'open') : 'lock'}" role="button" tabindex="${open ? 0 : -1}" transform="translate(${cx + (k - 1) * 76} 376)">
+        return `<g class="ux-btn" data-who="${who}" data-kind="dress" data-val="${d}" data-state="${open ? (active ? 'on' : 'open') : 'lock'}" role="button" tabindex="${open ? 0 : -1}" transform="translate(${cx + (k - 1) * 78} 314)">
           <g class="btn-vis" filter="url(#softShadow)">
-            <circle r="32" fill="#fffaf0" stroke="${active ? '#ffd27a' : '#8cb67d'}" stroke-width="${active ? 5 : 2.5}"/>
-            <circle r="21" fill="${cols[d]}" opacity="${open ? 1 : .28}"/>
+            <circle r="31" fill="#fffaf0" stroke="${active ? '#ffd27a' : '#8cb67d'}" stroke-width="${active ? 5 : 2.5}"/>
+            <circle r="20" fill="${cols[d]}" opacity="${open ? 1 : .28}"/>
           </g>
         </g>`;
       }).join('');
-      const hatBtns = (who, cx) => [null, ...hats].map((h, k) => {
-        const need = h ? WARDROBE_UNLOCKS[h] : 0, open = stars >= need, active = save.outfit[who].hat === h;
-        const x = cx + (k - 1.5) * 68;
+      const hatBtns = (who, cx) => hatRows.map((row, rIdx) => row.map((h, k) => {
+        const open = isHatOpen(h), active = save.outfit[who].hat === h;
+        const x = cx + (k - 1) * 78, y = 388 + rIdx * 74;
         const inner = h && SIZES['hat_' + h]
           ? `<image href="${SRC('hat_' + h)}" x="-22" y="-22" width="44" height="44" preserveAspectRatio="xMidYMid meet" opacity="${open ? 1 : .28}"/>`
           : `<text class="latin" y="8" text-anchor="middle" font-size="24" fill="#6b7f70">✕</text>`;
-        return `<g class="ux-btn" data-who="${who}" data-kind="hat" data-val="${h || ''}" data-state="${open ? (active ? 'on' : 'open') : 'lock'}" role="button" tabindex="${open ? 0 : -1}" transform="translate(${x} 454)">
+        const lockTag = h && !open ? `<text y="24" text-anchor="middle" font-size="11" fill="#5e7a67">${hatHint[h] || ''}</text>` : '';
+        return `<g class="ux-btn" data-who="${who}" data-kind="hat" data-val="${h || ''}" data-state="${open ? (active ? 'on' : 'open') : 'lock'}" role="button" tabindex="${open ? 0 : -1}" transform="translate(${x} ${y})">
           <g class="btn-vis" filter="url(#softShadow)">
-            <circle r="32" fill="#fffaf0" stroke="${active ? '#ffd27a' : '#8cb67d'}" stroke-width="${active ? 5 : 2.5}"/>${inner}
+            <circle r="31" fill="#fffaf0" stroke="${active ? '#ffd27a' : '#8cb67d'}" stroke-width="${active ? 5 : 2.5}"/>${inner}${lockTag}
           </g>
         </g>`;
-      }).join('');
+      }).join('')).join('');
 
       const root = uxPaint(`<g class="page">
         <image href="${SRC('bg_woods')}" width="960" height="520" preserveAspectRatio="xMidYMid slice"/>
         <rect width="960" height="520" fill="#112219" opacity=".6"/>
-        <rect x="115" y="70" width="320" height="252" rx="28" fill="#fbe8f1" stroke="#ffd27a" stroke-width="4" filter="url(#softShadow)"/>
-        <rect x="525" y="70" width="320" height="252" rx="28" fill="#e6efe4" stroke="#ffd27a" stroke-width="4" filter="url(#softShadow)"/>
-        <g id="wdSkye" transform="translate(275 294) scale(1.45)"></g>
-        <g id="wdLab" transform="translate(685 300) scale(1.32)"></g>
+        <rect x="115" y="44" width="320" height="226" rx="28" fill="#fbe8f1" stroke="#ffd27a" stroke-width="4" filter="url(#softShadow)"/>
+        <rect x="525" y="44" width="320" height="226" rx="28" fill="#e6efe4" stroke="#ffd27a" stroke-width="4" filter="url(#softShadow)"/>
+        <g id="wdSkye" transform="translate(275 248) scale(1.38)"></g>
+        <g id="wdLab" transform="translate(685 254) scale(1.24)"></g>
         ${dressBtns('skye', 275)}${hatBtns('skye', 275)}
         ${dressBtns('labrador', 685)}${hatBtns('labrador', 685)}
         ${uxButton({ act: 'back', ui: 'back', icon: 'back', x: 56, y: 48, r: 34 })}
@@ -2885,7 +3674,7 @@ function createGame() {
     padLastB = bPressed;
   }
   /* Orchestration: main game flow, Scene A / Scene B interactive handlers, animation loop, dev QA hooks & offline worker. */
-  const playFlow = { phase: 'title', prevIdx: null, workshopQueued: false };
+  const playFlow = { phase: 'title', prevIdx: null, workshopQueued: false, wsLock: false, wsNonce: 0, wsAdvanceTimer: 0 };
   const uxHooksReady = () => { uxHooks.replay = i => openRoom(i, true); };
   uxHooksReady();
 
@@ -2925,6 +3714,10 @@ function createGame() {
     const needArt = roomArtSet(idx, recallIds);
     playFlow.phase = 'story';
     playFlow.workshopQueued = false;
+    playFlow.wsNonce++;
+    playFlow.wsLock = false;
+    clearTimeout(playFlow.wsAdvanceTimer);
+    playFlow.wsAdvanceTimer = 0;
 
     loadArt(needArt, ART_PATIENCE).then(() => {
       const startPlay = () => {
@@ -2945,6 +3738,10 @@ function createGame() {
   function onHudReplay() {
     if (game.state !== 'play') return;
     playFlow.workshopQueued = false;
+    playFlow.wsNonce++;
+    playFlow.wsLock = false;
+    clearTimeout(playFlow.wsAdvanceTimer);
+    playFlow.wsAdvanceTimer = 0;
     game.start(game.index);
     sceneDrawn.idx = -1;
     renderStage(game, true);
@@ -3001,7 +3798,7 @@ function createGame() {
   }
 
   function onStoneClick(chunk, btnNode) {
-    if (!canPlay() || game.screen !== 1) return;
+    if (!canPlay() || game.screen !== 1 || playFlow.wsLock) return;
     unlockAudio();
     const ok = game.tapStone(chunk);
     const evs = game.drain();
@@ -3013,28 +3810,64 @@ function createGame() {
       return;
     }
     const blended = evs.find(e => e.type === 'word_blended');
-    if (blended) {
-      if (typeof revealWorkshopMascot === 'function') revealWorkshopMascot(blended.word);
-      uxConfetti($('fx'), 480, 212, 38);
-      setTimeout(() => {
-        if ($('fx')) { uxConfetti($('fx'), 370, 165, 18); uxConfetti($('fx'), 590, 165, 18); }
-      }, 220);
-    }
-    if (game.state === 'clear' || game.state === 'win') {
-      const lvIdx = game.index;
-      setTimeout(() => completeRoom(lvIdx), 1700);
+    if (!blended) {
+      renderStage(game, false);
       return;
     }
-    if (blended) {
-      setTimeout(() => {
-        if (game.state !== 'play') return;
+
+    playFlow.wsLock = true;
+    const nonce = ++playFlow.wsNonce;
+    clearTimeout(playFlow.wsAdvanceTimer);
+    playFlow.wsAdvanceTimer = 0;
+    let pausedForTrace = false;
+
+    const advanceWorkshop = () => {
+      if (nonce !== playFlow.wsNonce || game.state === 'title' || playFlow.phase !== 'play') return;
+      clearTimeout(playFlow.wsAdvanceTimer);
+      playFlow.wsAdvanceTimer = 0;
+      playFlow.wsLock = false;
+      if (game.state === 'clear' || game.state === 'win') {
+        completeRoom(game.index);
+        return;
+      }
+      if (game.state === 'play') {
         renderStage(game, false);
         const nr = game.currentRound();
         if (nr) TK.say('quiz_' + nr.word, { tag: 'prompt', maxWait: 4500 });
-      }, 1600);
-    } else {
-      renderStage(game, false);
+      }
+    };
+
+    if (typeof revealWorkshopMascot === 'function') {
+      revealWorkshopMascot(blended.word, {
+        onTrace: typeof showTrace === 'function'
+          ? () => {
+              if (nonce !== playFlow.wsNonce) return;
+              pausedForTrace = true;
+              clearTimeout(playFlow.wsAdvanceTimer);
+              playFlow.wsAdvanceTimer = 0;
+              showTrace(blended.word, () => {
+                if (nonce !== playFlow.wsNonce || game.state === 'title') return;
+                syncHud();
+                advanceWorkshop();
+              }, { single: true });
+            }
+          : null,
+        onNext: () => advanceWorkshop(),
+      });
     }
+
+    uxConfetti($('fx'), 480, 212, 38);
+    setTimeout(() => {
+      if ($('fx')) { uxConfetti($('fx'), 370, 165, 18); uxConfetti($('fx'), 590, 165, 18); }
+    }, 220);
+
+    const blendDone = TK.say('blend_' + blended.word, { interrupt: true, tag: 'blend', maxWait: 6000 });
+    Promise.all([uxWait(2200), Promise.race([blendDone, uxWait(9000)])]).then(() => {
+      if (pausedForTrace || nonce !== playFlow.wsNonce || game.state === 'title' || storyIsOpen()) return;
+      playFlow.wsAdvanceTimer = setTimeout(() => {
+        if (!pausedForTrace && !storyIsOpen()) advanceWorkshop();
+      }, 450);
+    });
   }
 
   function onPupTap(who) {

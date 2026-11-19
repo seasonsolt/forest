@@ -1,5 +1,5 @@
   /* Orchestration: main game flow, Scene A / Scene B interactive handlers, animation loop, dev QA hooks & offline worker. */
-  const playFlow = { phase: 'title', prevIdx: null, workshopQueued: false };
+  const playFlow = { phase: 'title', prevIdx: null, workshopQueued: false, wsLock: false, wsNonce: 0, wsAdvanceTimer: 0 };
   const uxHooksReady = () => { uxHooks.replay = i => openRoom(i, true); };
   uxHooksReady();
 
@@ -39,6 +39,10 @@
     const needArt = roomArtSet(idx, recallIds);
     playFlow.phase = 'story';
     playFlow.workshopQueued = false;
+    playFlow.wsNonce++;
+    playFlow.wsLock = false;
+    clearTimeout(playFlow.wsAdvanceTimer);
+    playFlow.wsAdvanceTimer = 0;
 
     loadArt(needArt, ART_PATIENCE).then(() => {
       const startPlay = () => {
@@ -59,6 +63,10 @@
   function onHudReplay() {
     if (game.state !== 'play') return;
     playFlow.workshopQueued = false;
+    playFlow.wsNonce++;
+    playFlow.wsLock = false;
+    clearTimeout(playFlow.wsAdvanceTimer);
+    playFlow.wsAdvanceTimer = 0;
     game.start(game.index);
     sceneDrawn.idx = -1;
     renderStage(game, true);
@@ -115,7 +123,7 @@
   }
 
   function onStoneClick(chunk, btnNode) {
-    if (!canPlay() || game.screen !== 1) return;
+    if (!canPlay() || game.screen !== 1 || playFlow.wsLock) return;
     unlockAudio();
     const ok = game.tapStone(chunk);
     const evs = game.drain();
@@ -127,28 +135,64 @@
       return;
     }
     const blended = evs.find(e => e.type === 'word_blended');
-    if (blended) {
-      if (typeof revealWorkshopMascot === 'function') revealWorkshopMascot(blended.word);
-      uxConfetti($('fx'), 480, 212, 38);
-      setTimeout(() => {
-        if ($('fx')) { uxConfetti($('fx'), 370, 165, 18); uxConfetti($('fx'), 590, 165, 18); }
-      }, 220);
-    }
-    if (game.state === 'clear' || game.state === 'win') {
-      const lvIdx = game.index;
-      setTimeout(() => completeRoom(lvIdx), 1700);
+    if (!blended) {
+      renderStage(game, false);
       return;
     }
-    if (blended) {
-      setTimeout(() => {
-        if (game.state !== 'play') return;
+
+    playFlow.wsLock = true;
+    const nonce = ++playFlow.wsNonce;
+    clearTimeout(playFlow.wsAdvanceTimer);
+    playFlow.wsAdvanceTimer = 0;
+    let pausedForTrace = false;
+
+    const advanceWorkshop = () => {
+      if (nonce !== playFlow.wsNonce || game.state === 'title' || playFlow.phase !== 'play') return;
+      clearTimeout(playFlow.wsAdvanceTimer);
+      playFlow.wsAdvanceTimer = 0;
+      playFlow.wsLock = false;
+      if (game.state === 'clear' || game.state === 'win') {
+        completeRoom(game.index);
+        return;
+      }
+      if (game.state === 'play') {
         renderStage(game, false);
         const nr = game.currentRound();
         if (nr) TK.say('quiz_' + nr.word, { tag: 'prompt', maxWait: 4500 });
-      }, 1600);
-    } else {
-      renderStage(game, false);
+      }
+    };
+
+    if (typeof revealWorkshopMascot === 'function') {
+      revealWorkshopMascot(blended.word, {
+        onTrace: typeof showTrace === 'function'
+          ? () => {
+              if (nonce !== playFlow.wsNonce) return;
+              pausedForTrace = true;
+              clearTimeout(playFlow.wsAdvanceTimer);
+              playFlow.wsAdvanceTimer = 0;
+              showTrace(blended.word, () => {
+                if (nonce !== playFlow.wsNonce || game.state === 'title') return;
+                syncHud();
+                advanceWorkshop();
+              }, { single: true });
+            }
+          : null,
+        onNext: () => advanceWorkshop(),
+      });
     }
+
+    uxConfetti($('fx'), 480, 212, 38);
+    setTimeout(() => {
+      if ($('fx')) { uxConfetti($('fx'), 370, 165, 18); uxConfetti($('fx'), 590, 165, 18); }
+    }, 220);
+
+    const blendDone = TK.say('blend_' + blended.word, { interrupt: true, tag: 'blend', maxWait: 6000 });
+    Promise.all([uxWait(2200), Promise.race([blendDone, uxWait(9000)])]).then(() => {
+      if (pausedForTrace || nonce !== playFlow.wsNonce || game.state === 'title' || storyIsOpen()) return;
+      playFlow.wsAdvanceTimer = setTimeout(() => {
+        if (!pausedForTrace && !storyIsOpen()) advanceWorkshop();
+      }, 450);
+    });
   }
 
   function onPupTap(who) {

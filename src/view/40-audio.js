@@ -1,9 +1,14 @@
   /* Procedural WebAudio woodland score & tactile phonics Foley, plus music ducking and portrait suspension. */
   const AC = window.AudioContext || window.webkitAudioContext;
-  let audio = null, muted = !setting('sound'), voiceOn = false, bus = null, noiseBuf = null, curLevel = 0;
+  let audio = null, muted = !setting('sound'), voiceOn = false, pianoActive = false, bus = null, noiseBuf = null, curLevel = 0;
 
   const soundWanted = () => !muted && !(typeof isPortraitView === 'function' && isPortraitView());
-  const musicLevel = () => soundWanted() ? (voiceOn ? .035 : .14) : 0;
+  const musicLevel = () => soundWanted() ? (pianoActive ? .02 : (voiceOn ? .035 : .14)) : 0;
+
+  function setPianoDuck(on) {
+    pianoActive = !!on;
+    refreshAudioGains();
+  }
 
   function makeAudio() {
     if (audio || !AC) return;
@@ -96,7 +101,19 @@
     } else if (kind === 'page') {
       rustleBurst(t, .14, 1400, 1.2, .08);
       envNote(t, midi(72), .11, .09, 'sine');
+    } else if (kind === 'gliss') {
+      [60, 62, 64, 65, 67, 69, 71, 72, 76, 79, 84].forEach((m, i) => envNote(t + i * .045, midi(m), .38, .14, 'triangle'));
     }
+  }
+
+  function playPianoNote(midiNote, accent) {
+    unlockAudio();
+    if (!audio || !soundWanted()) return;
+    const t = audio.currentTime;
+    const dur = accent ? .52 : .38;
+    const vol = accent ? .22 : .18;
+    envNote(t, midi(midiNote), dur, vol, 'triangle');
+    envNote(t + .01, midi(midiNote + 12), dur * .75, vol * .38, 'sine');
   }
 
   /* 8 bright, gentle acoustic woodland scores (marimba + warm pluck bass + soft flute motif) */

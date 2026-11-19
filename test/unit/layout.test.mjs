@@ -18,7 +18,7 @@ export function sceneAHotspotsAndUiButtonsMeetMinimumTouchSize({ logic, loadLib,
     }
   }
   // Check every uxButton radius literal in view files ensures diameter >= 64 CSS px
-  for (const f of ['60-story.js', '70-ui.js', '75-rewards.js']) {
+  for (const f of ['10-stage.js', '60-story.js', '70-ui.js', '72-abc-play.js', '75-rewards.js']) {
     const src = fs.readFileSync(path.join(ROOT, 'src/view', f), 'utf8');
     for (const m of src.matchAll(/uxButton\(\{[^}]*\br:\s*(\d+)/g)) {
       const r = Number(m[1]);

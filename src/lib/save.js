@@ -13,6 +13,9 @@
       settings: { subtitles: false, english: 'words+phrases', sound: true },
       rooms: {},
       words: {},
+      traced: {},
+      caseMatches: 0,
+      abcSongs: 0,
       totalPlaySeconds: 0,
       roomClock: 0,
       stickers: [],
@@ -48,6 +51,13 @@
         for (const k of WORD_COUNTERS) if (nat(w[k], 0) > 0) s.words[id][k] = nat(w[k], 0);
       }
     }
+    if (isObj(raw.traced)) {
+      for (const id of Object.keys(raw.traced)) {
+        if (/^[a-z]$/.test(id) && raw.traced[id]) s.traced[id] = true;
+      }
+    }
+    s.caseMatches = nat(raw.caseMatches, 0);
+    s.abcSongs = nat(raw.abcSongs, 0);
     if (Array.isArray(raw.stickers)) s.stickers = raw.stickers.filter(x => typeof x === 'string');
     if (Array.isArray(raw.board)) s.board = raw.board.filter(b => isObj(b) && typeof b.id === 'string' && Number.isFinite(b.x) && Number.isFinite(b.y)).map(b => ({ id: b.id, x: b.x, y: b.y }));
     if (isObj(raw.outfit)) {
@@ -91,6 +101,10 @@
       for (const k of WORD_COUNTERS) if (nat(o[k], 0) > nat(w[k], 0)) w[k] = nat(o[k], 0);
       for (const k of Object.keys(o)) if (!(k in w)) w[k] = o[k];
     }
+    if (!isObj(mine.traced)) mine.traced = {};
+    for (const id of Object.keys(theirs.traced || {})) if (/^[a-z]$/.test(id) && theirs.traced[id]) mine.traced[id] = true;
+    mine.caseMatches = Math.max(nat(mine.caseMatches, 0), nat(theirs.caseMatches, 0));
+    mine.abcSongs = Math.max(nat(mine.abcSongs, 0), nat(theirs.abcSongs, 0));
     for (const id of theirs.stickers || []) if (!mine.stickers.includes(id)) mine.stickers.push(id);
     for (const b of theirs.board || []) if (!mine.board.some(x => x.id === b.id)) mine.board.push({ id: b.id, x: b.x, y: b.y });
     mine.totalPlaySeconds = Math.max(nat(mine.totalPlaySeconds, 0), nat(theirs.totalPlaySeconds, 0));

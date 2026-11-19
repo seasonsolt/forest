@@ -35,7 +35,7 @@
     } else if (g.hintTarget.screen === 1) {
       const choices = g.currentChoices();
       const idx = choices.indexOf(g.hintTarget.val);
-      gx = [265, 480, 695][idx >= 0 ? idx : 1];
+      gx = [250, 480, 710][idx >= 0 ? idx : 1];
       gy = 428;
     }
     const r = 52 + Math.sin(now * 5) * 6;

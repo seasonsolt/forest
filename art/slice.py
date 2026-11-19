@@ -40,6 +40,9 @@ ATLASES = {
         ['word_y', 'word_z'],
         ['prop_letter_gem', 'prop_abc_party'],
     ],
+    'atlas_hats_extra': [
+        ['hat_bow', 'hat_butterfly'],
+    ],
     'atlas_props': [
         ['prop_stump', 'prop_bush', 'prop_mushroom', 'prop_lily'],
         ['prop_rock', 'prop_nest', 'prop_orb', 'prop_postcard'],

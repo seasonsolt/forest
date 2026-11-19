@@ -194,7 +194,8 @@
     });
   }
 
-  function revealWorkshopMascot(wordId) {
+  function revealWorkshopMascot(wordId, opts) {
+    const o = opts || {};
     const animalG = $('wsAnimal');
     if (animalG) {
       animalG.textContent = '';
@@ -203,8 +204,16 @@
       const wIcon = 'word_' + wordId;
       const [ww, wh] = SIZES[wIcon] || [200, 200];
       const ws = 154 / Math.max(ww, wh);
-      const popG = el('g', { class: 'ux-pop on' }, animalG);
+      const popG = el('g', { class: 'ux-pop on ux-btn', role: 'button', tabindex: '0', 'aria-label': String(wordId).toUpperCase() }, animalG);
+      el('circle', { r: 78, fill: 'transparent' }, popG);
       img(wIcon, -(ww * ws) / 2, -(wh * ws) / 2 - 4, ww * ws, wh * ws, popG, { class: 'ux-anim-pulse' });
+      const tapMascot = () => {
+        uxNudge(popG);
+        if (typeof voice !== 'undefined' && voice.word) voice.word(wordId);
+        uxConfetti($('fx'), 480, 200, 12);
+      };
+      popG.addEventListener('click', tapMascot);
+      popG.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tapMascot(); } });
     }
     const wObj = WORDS.find(x => x.id === wordId);
     const bg = $('wsPlaqueBg'), txt = $('wsPlaqueTxt');
@@ -213,6 +222,28 @@
       txt.setAttribute('fill', '#b8326a');
       txt.setAttribute('font-size', '28');
       txt.textContent = `${wObj.letter}${wObj.lower} · ${wObj.wordEn}`;
+    }
+    const box = $('workshop');
+    if (box) {
+      box.querySelectorAll('[data-act="ws-trace"], [data-act="ws-next"]').forEach(n => n.remove());
+      if (o.onTrace || o.onNext) {
+        let html = '';
+        if (o.onTrace) html += uxButton({ act: 'ws-trace', ui: 'trace', icon: 'trace', x: 716, y: 212, r: 36, cls: 'ux-pop on' });
+        if (o.onNext) html += uxButton({ act: 'ws-next', ui: 'next', icon: 'next', x: 836, y: 212, r: 34, plate: 'gold', cls: 'ux-pop on' });
+        box.insertAdjacentHTML('beforeend', html);
+        const trBtn = box.querySelector('[data-act="ws-trace"]');
+        if (trBtn && o.onTrace) {
+          trBtn.addEventListener('pointerenter', () => { if (typeof voice !== 'undefined') voice.ui('trace'); });
+          trBtn.addEventListener('click', o.onTrace);
+          trBtn.addEventListener('keydown', /** @param {KeyboardEvent} e */ e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); o.onTrace(); } });
+        }
+        const nxBtn = box.querySelector('[data-act="ws-next"]');
+        if (nxBtn && o.onNext) {
+          nxBtn.addEventListener('pointerenter', () => { if (typeof voice !== 'undefined') voice.ui('next'); });
+          nxBtn.addEventListener('click', o.onNext);
+          nxBtn.addEventListener('keydown', /** @param {KeyboardEvent} e */ e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); o.onNext(); } });
+        }
+      }
     }
   }
 

@@ -2725,6 +2725,72 @@
         },
         "，就是小斑马！"
       ]
+    },
+    "ui_abc_song": {
+      "who": "skye",
+      "say": [
+        "彩虹字母歌琴键！"
+      ]
+    },
+    "ui_trace": {
+      "who": "skye",
+      "say": [
+        "星光描红写字母！"
+      ]
+    },
+    "ui_case_match": {
+      "who": "skye",
+      "say": [
+        "大小写字母牵牵手！"
+      ]
+    },
+    "abc_piano_intro": {
+      "who": "labrador",
+      "say": [
+        "欢迎来到彩虹字母琴键！点一点会唱歌，点小音符就能听整首 ABC 字母歌哦！"
+      ]
+    },
+    "abc_piano_guide": {
+      "who": "skye",
+      "say": [
+        "跟着发光的小星星，从 A 弹到 Z 吧！"
+      ]
+    },
+    "abc_piano_win": {
+      "who": "labrador",
+      "say": [
+        "哇，二十六个字母全部弹完啦！你就是森林里最棒的小钢琴家！"
+      ]
+    },
+    "trace_intro": {
+      "who": "skye",
+      "say": [
+        "伸出小手指，跟着发光的小星星画一画字母吧！"
+      ]
+    },
+    "trace_done_1": {
+      "who": "skye",
+      "say": [
+        "写得真漂亮！送你漫天小星星！"
+      ]
+    },
+    "trace_done_2": {
+      "who": "labrador",
+      "say": [
+        "太厉害啦！小侦探的字母写得又稳又好看！"
+      ]
+    },
+    "match_intro": {
+      "who": "labrador",
+      "say": [
+        "大字母姐姐在找小字母宝宝呢，帮它们牵牵手吧！"
+      ]
+    },
+    "match_done": {
+      "who": "skye",
+      "say": [
+        "耶！大字母和小字母全部牵手成功啦，你真棒！"
+      ]
     }
   }
 }

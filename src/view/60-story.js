@@ -57,6 +57,9 @@
     if (kind === 'wardrobe') return `<path d="M0 ${-s * .5}L${s * .45} ${-s * .1}L${s * .3} ${s * .55}H${-s * .3}L${-s * .45} ${-s * .1}Z" fill="none" stroke="${c}" stroke-width="2.6" stroke-linejoin="round"/>`;
     if (kind === 'rooms') return `<rect x="${-s * .5}" y="${-s * .5}" width="${s * .42}" height="${s * .42}" rx="4" fill="${c}"/><rect x="${s * .08}" y="${-s * .5}" width="${s * .42}" height="${s * .42}" rx="4" fill="${c}"/><rect x="${-s * .5}" y="${s * .08}" width="${s * .42}" height="${s * .42}" rx="4" fill="${c}"/><rect x="${s * .08}" y="${s * .08}" width="${s * .42}" height="${s * .42}" rx="4" fill="${c}"/>`;
     if (kind === 'gear') return `<circle r="${s * .42}" fill="none" stroke="${c}" stroke-width="3.2" stroke-dasharray="5 3"/><circle r="${s * .16}" fill="${c}"/>`;
+    if (kind === 'note') return `<path d="M${-s * .15} ${s * .3}V${-s * .48}L${s * .45} ${-s * .6}V${s * .18}" fill="none" stroke="${c}" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${-s * .3}" cy="${s * .32}" r="${s * .19}" fill="${c}"/><circle cx="${s * .3}" cy="${s * .2}" r="${s * .19}" fill="${c}"/>`;
+    if (kind === 'trace') return `<path d="M${-s * .42} ${s * .42}L${-s * .32} ${s * .1}L${s * .26} ${-s * .48}L${s * .48} ${-s * .26}L${-s * .1} ${s * .32}Z" fill="${c}" stroke="${c}" stroke-width="1.5" stroke-linejoin="round"/><line x1="${s * .1}" y1="${-s * .32}" x2="${s * .32}" y2="${-s * .1}" stroke="#ffe89c" stroke-width="2.2"/>`;
+    if (kind === 'hearts') return `<text class="latin" y="${s * .3}" text-anchor="middle" font-size="${Math.round(s * .95)}" fill="${c}">Aa</text>`;
     return `<circle r="${s * .35}" fill="${c}"/>`;
   }
 
@@ -167,36 +170,7 @@
     const x0 = 480 - (n * cw + (n - 1) * gap) / 2;
     const cardY = n >= 4 ? 126 : 118;
 
-    let cardsHtml = uxCardRow(words, cardY, cw, ch, gap);
-    if (isRainbow) {
-      const allAz = WORDS.filter(w => w.kind === 'core');
-      const fills = ['#ffe4f0', '#e4f4ff', '#fff3cc', '#ebfae8', '#f2e8ff', '#ffeede'];
-      const rims = ['#f287b7', '#6dbbe8', '#efb646', '#7ec476', '#a884e6', '#f29a5e'];
-      const rowLens = [7, 7, 6, 6];
-      let cursor = 0;
-      const wall = [];
-      rowLens.forEach((cnt, rIdx) => {
-        const bw = 96, bh = 74, bgap = 12;
-        const rx0 = 480 - (cnt * bw + (cnt - 1) * bgap) / 2;
-        const ry = 76 + rIdx * 86;
-        for (let k = 0; k < cnt && cursor < allAz.length; k++) {
-          const w = allAz[cursor++];
-          const bx = rx0 + k * (bw + bgap);
-          const ci = (rIdx * 7 + k) % fills.length;
-          wall.push(`<g class="ux-pop on"><g class="ux-btn" data-word="${w.id}" role="button" tabindex="0" aria-label="${w.en}" transform="translate(${bx} ${ry})">
-            <g class="btn-vis" filter="url(#softShadow)">
-              <rect width="${bw}" height="${bh}" rx="18" fill="${fills[ci]}" stroke="${rims[ci]}" stroke-width="3.2"/>
-              <text class="latin" x="${bw / 2 - 11}" y="47" text-anchor="middle" font-size="31" fill="#4e1f3a">${w.letter}</text>
-              <text class="latin" x="${bw / 2 + 17}" y="47" text-anchor="middle" font-size="23" fill="#8a4a6e">${w.lower}</text>
-            </g>
-          </g></g>`);
-        }
-      });
-      cardsHtml = `<g filter="url(#softShadow)">
-        <rect x="275" y="18" width="410" height="44" rx="22" fill="#13261b" opacity=".88" stroke="#ffd27a" stroke-width="2.5"/>
-        <text x="480" y="47" text-anchor="middle" font-size="22" fill="#fff7df">A – Z 字母彩虹墙（点字母听发音！）</text>
-      </g>` + wall.join('');
-    }
+    const cardsHtml = isRainbow ? '<g id="abcPianoMount"></g>' : uxCardRow(words, cardY, cw, ch, gap);
 
     const root = uxPaint(`<g class="page">
       <image href="${SRC(uxLineArt('ch_' + lv.id, lv.bg))}" width="960" height="520" preserveAspectRatio="xMidYMid slice"/>
@@ -208,7 +182,14 @@
       </g>
       ${uxButton({ act: 'go', ui: 'next', icon: 'next', x: 886, y: 452, r: 38, plate: 'gold', cls: isRainbow ? 'ux-pulse' : '' })}
     </g>`);
-    const finish = () => uxEnd(s, done);
+    let pianoCtl = null;
+    if (isRainbow && typeof renderAbcPianoWall === 'function') {
+      pianoCtl = renderAbcPianoWall(root.querySelector('#abcPianoMount'), s, { standalone: false });
+    }
+    const finish = () => {
+      if (pianoCtl && pianoCtl.stop) pianoCtl.stop();
+      uxEnd(s, done);
+    };
     s.onKey = finish;
     uxBind(root, { go: finish, word: el => { uxNudge(el); uxWordVoice(el.dataset.word); uxConfetti(root.querySelector('.page'), 480, 220, 8); } });
     const cue = root.querySelector('#uxCue');

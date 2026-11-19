@@ -44,6 +44,10 @@ export function checkContentKeys(logic = loadLogic()) {
     'stone_assist', 'tutor_tap', 'tutor_phonics', 'tutor_fullscreen',
     'ui_play', 'ui_continue', 'ui_next', 'ui_replay', 'ui_back', 'ui_words', 'ui_stickers', 'ui_wardrobe',
     'ui_settings', 'ui_hint', 'ui_fullscreen', 'ui_sound', 'ui_quiz_skip', 'ui_meet', 'ui_rooms',
+    'ui_abc_song', 'ui_trace', 'ui_case_match',
+    'abc_piano_intro', 'abc_piano_guide', 'abc_piano_win',
+    'trace_intro', 'trace_done_1', 'trace_done_2',
+    'match_intro', 'match_done',
     'clue_1', 'clue_2', 'clue_3', 'clue_4', 'stone_try_1', 'stone_try_2', 'stone_try_3',
     'quiz_right_1', 'quiz_right_2', 'quiz_right_3', 'quiz_wrong_1', 'quiz_wrong_2', 'quiz_wrong_3',
     'idle_1', 'idle_2', 'idle_3', 'idle_4', 'cheer_1', 'cheer_2', 'cheer_3', 'cheer_4'];

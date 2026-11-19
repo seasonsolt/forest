@@ -133,17 +133,19 @@
     const quizOk = core.reduce((n, w) => n + ((save.words[w.id] && save.words[w.id].quiz) || 0), 0);
     const quizWrong = core.reduce((n, w) => n + ((save.words[w.id] && save.words[w.id].wrong) || 0), 0);
     const acc = quizOk + quizWrong > 0 ? Math.round((quizOk * 100) / (quizOk + quizWrong)) + '%' : '100%';
+    const traced = Object.keys(save.traced || {}).filter(k => save.traced[k]).length;
+    const matches = save.caseMatches || 0;
     const mins = Math.max(1, Math.round((save.totalPlaySeconds || 0) / 60));
 
     modal.innerHTML = `<rect width="960" height="520" fill="#0d1b13" opacity=".78"/>
-      <g transform="translate(220 75)" filter="url(#softShadow)">
-        <rect width="520" height="370" rx="28" fill="#fffaf0" stroke="#ffd27a" stroke-width="4"/>
-        <text x="260" y="48" text-anchor="middle" font-size="28" fill="#1c3526">家长设置与学习统计</text>
-        <text x="48" y="96" font-size="20" fill="#2d4c39">已听掌握字母：${heard} / ${core.length} · 测试首答率：${acc} · 累计探索：${mins} 分钟</text>
-        <g class="ux-btn" data-m="subs" transform="translate(48 130)"><rect width="424" height="52" rx="14" fill="#edf5ea" stroke="#9ac090" stroke-width="2"/><text x="24" y="33" font-size="20" fill="#1c3526">中英字幕显示：${setting('subtitles') ? '开启' : '关闭'}</text></g>
-        <g class="ux-btn" data-m="eng" transform="translate(48 196)"><rect width="424" height="52" rx="14" fill="#edf5ea" stroke="#9ac090" stroke-width="2"/><text x="24" y="33" font-size="20" fill="#1c3526">英文教学模式：${setting('english') === 'words+phrases' ? '字母 + 短句' : '仅字母和单词'}</text></g>
-        <g class="ux-btn" data-m="snd" transform="translate(48 262)"><rect width="202" height="52" rx="14" fill="#edf5ea" stroke="#9ac090" stroke-width="2"/><text x="24" y="33" font-size="20" fill="#1c3526">声音：${setting('sound') ? '开启' : '静音'}</text></g>
-        <g class="ux-btn" data-m="close" transform="translate(270 262)"><rect width="202" height="52" rx="14" fill="url(#goldGrad)" stroke="#d6a44e" stroke-width="2"/><text x="101" y="33" text-anchor="middle" font-size="22" fill="#4a2605">关闭返回</text></g>
+      <g transform="translate(200 70)" filter="url(#softShadow)">
+        <rect width="560" height="380" rx="28" fill="#fffaf0" stroke="#ffd27a" stroke-width="4"/>
+        <text x="280" y="48" text-anchor="middle" font-size="28" fill="#1c3526">家长设置与学习统计</text>
+        <text x="280" y="92" text-anchor="middle" font-size="18" fill="#2d4c39">已听字母：${heard}/${core.length} · 星光描红：${traced}/26 · 配对：${matches}次 · 首答率：${acc} · ${mins}分钟</text>
+        <g class="ux-btn" data-m="subs" transform="translate(48 130)"><rect width="464" height="52" rx="14" fill="#edf5ea" stroke="#9ac090" stroke-width="2"/><text x="24" y="33" font-size="20" fill="#1c3526">中英字幕显示：${setting('subtitles') ? '开启' : '关闭'}</text></g>
+        <g class="ux-btn" data-m="eng" transform="translate(48 196)"><rect width="464" height="52" rx="14" fill="#edf5ea" stroke="#9ac090" stroke-width="2"/><text x="24" y="33" font-size="20" fill="#1c3526">英文教学模式：${setting('english') === 'words+phrases' ? '字母 + 短句' : '仅字母和单词'}</text></g>
+        <g class="ux-btn" data-m="snd" transform="translate(48 262)"><rect width="222" height="52" rx="14" fill="#edf5ea" stroke="#9ac090" stroke-width="2"/><text x="24" y="33" font-size="20" fill="#1c3526">声音：${setting('sound') ? '开启' : '静音'}</text></g>
+        <g class="ux-btn" data-m="close" transform="translate(290 262)"><rect width="222" height="52" rx="14" fill="url(#goldGrad)" stroke="#d6a44e" stroke-width="2"/><text x="111" y="33" text-anchor="middle" font-size="22" fill="#4a2605">关闭返回</text></g>
       </g>`;
 
     const close = () => { uxState.modal = false; modal.textContent = ''; };

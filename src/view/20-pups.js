@@ -6,14 +6,16 @@
     const hName = 'hat_' + hat;
     if (!SIZES[hName]) return;
     const [hw, hh] = SIZES[hName];
-    const scale = who === 'skye' ? .42 : .45;
+    const isBand = hat === 'bow' || hat === 'butterfly';
+    const scale = isBand ? (who === 'skye' ? .48 : .52) : (who === 'skye' ? .42 : .45);
     const w = hw * scale, h = hh * scale;
     const dx = who === 'skye'
       ? (pose === 'fly' ? 11 : (pose === 'idle' ? 8 : 4))
       : (pose === 'cheer' ? -2 : (pose === 'search' ? 5 : (pose === 'walk' ? 3 : 2)));
-    const dy = who === 'skye'
+    const bandDy = hat === 'bow' ? 10 : (hat === 'butterfly' ? 7 : 0);
+    const dy = (who === 'skye'
       ? (pose === 'cheer' ? -110 : -106)
-      : (pose === 'cheer' ? -131 : -126);
+      : (pose === 'cheer' ? -131 : -126)) + bandDy;
     img(hName, dx - w / 2, dy - h / 2, w, h, parent);
   }
 

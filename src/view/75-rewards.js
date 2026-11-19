@@ -1,5 +1,5 @@
-  /* Rewards: Wordbook + Ear Listening Quiz (24 words across 2 pages), Sticker Treehouse Board, Meet & Pup Gear Locker (Wardrobe). */
-  const WARDROBE_UNLOCKS = { d1: 2, d2: 5, wreath: 8, detective: 12, crown: 16 };
+  /* Rewards: 26-Letter Alphabet Book + Mini-Game Launchers, Sticker Treehouse Board, Meet & 5-Hat Wardrobe. */
+  const WARDROBE_UNLOCKS = { d1: 2, d2: 5, bow: 3, wreath: 8, butterfly: 10, detective: 12, crown: 16 };
 
   function totalStarsCount() {
     let n = 0;
@@ -10,7 +10,7 @@
     return n;
   }
 
-  /* ---------- 26-Letter Alphabet Book (26 letters across 3 spacious 3x3 pages, cards 238x112 -> ~250x118 CSS px) ---------- */
+  /* ---------- 26-Letter Alphabet Book + Interactive Playgrounds ---------- */
   function showWords() {
     const core = WORDS.filter(w => w.kind === 'core');
     const pages = Math.max(1, Math.ceil(core.length / 9));
@@ -19,16 +19,22 @@
     const render = () => {
       if (!uxAlive(s)) return;
       const slice = core.slice(pageIdx * 9, pageIdx * 9 + 9);
+      const tracedCount = Object.keys(save.traced || {}).filter(k => save.traced[k]).length;
       const cards = slice.map((w, i) => {
         const col = i % 3, row = (i / 3) | 0;
-        const x = 104 + col * 256, y = 92 + row * 124;
+        const x = 104 + col * 256, y = 94 + row * 122;
         const learned = !!(save.words[w.id] && (save.words[w.id].heard > 0 || save.words[w.id].seen));
+        const traced = !!(save.traced && save.traced[w.id]);
         return `<g class="ux-btn" data-word="${w.id}" role="button" tabindex="0" aria-label="${w.en}" transform="translate(${x} ${y})">
           <g class="btn-vis" filter="url(#softShadow)">
-            <rect width="238" height="112" rx="20" fill="${learned ? '#fffaf0' : '#1b3124'}" stroke="${learned ? '#ffd27a' : '#4a6b56'}" stroke-width="3"/>
-            <image href="${SRC(w.icon || 'word_' + w.id)}" x="14" y="16" width="78" height="78" preserveAspectRatio="xMidYMid meet" ${learned ? '' : 'filter="url(#silhouette)" opacity=".5"'}/>
-            <text class="latin" x="164" y="54" text-anchor="middle" font-size="30" fill="${learned ? '#b8326a' : '#73917e'}">${learned ? (w.letter ? w.letter + w.lower : w.en) : '???'}</text>
-            <text class="latin" x="164" y="84" text-anchor="middle" font-size="18" fill="${learned ? '#36260b' : '#73917e'}">${learned ? (w.wordEn || '') : ''}</text>
+            <rect width="238" height="110" rx="20" fill="${learned ? '#fffaf0' : '#1b3124'}" stroke="${traced ? '#f287b7' : (learned ? '#ffd27a' : '#4a6b56')}" stroke-width="3"/>
+            <image href="${SRC(w.icon || 'word_' + w.id)}" x="12" y="15" width="78" height="78" preserveAspectRatio="xMidYMid meet" ${learned ? '' : 'filter="url(#silhouette)" opacity=".5"'}/>
+            <text class="latin" x="148" y="53" text-anchor="middle" font-size="30" fill="${learned ? '#b8326a' : '#73917e'}">${learned ? (w.letter ? w.letter + w.lower : w.en) : '???'}</text>
+            <text class="latin" x="148" y="83" text-anchor="middle" font-size="18" fill="${learned ? '#36260b' : '#73917e'}">${learned ? (w.wordEn || '') : ''}</text>
+            <g class="ux-btn" data-trace="${w.id}" role="button" tabindex="0" aria-label="描红 ${w.letter}" transform="translate(212 24)">
+              <circle r="17" fill="${traced ? '#ffd27a' : '#ffe5f1'}" stroke="${traced ? '#e89d2f' : '#f287b7'}" stroke-width="2"/>
+              <text x="0" y="6" text-anchor="middle" font-size="15" fill="#7a2c4f">${traced ? '★' : '✎'}</text>
+            </g>
           </g>
         </g>`;
       }).join('');
@@ -38,6 +44,13 @@
         <image href="${SRC('bg_woods')}" width="960" height="520" preserveAspectRatio="xMidYMid slice"/>
         <rect width="960" height="520" fill="#112219" opacity=".68"/>
         ${uxButton({ act: 'back', ui: 'back', icon: 'back', x: 56, y: 48, r: 34 })}
+        <g filter="url(#softShadow)">
+          <rect x="164" y="25" width="320" height="46" rx="23" fill="#13261b" opacity=".88" stroke="#ffd27a" stroke-width="2.5"/>
+          <text x="324" y="55" text-anchor="middle" font-size="22" fill="#fff7df">26 字母图鉴（星光描红 ${tracedCount}/26）</text>
+        </g>
+        ${uxButton({ act: 'abcSong', ui: 'abc_song', icon: 'note', x: 644, y: 48, r: 32, plate: 'gold' })}
+        ${uxButton({ act: 'traceMode', ui: 'trace', icon: 'trace', x: 736, y: 48, r: 32 })}
+        ${uxButton({ act: 'caseMatch', ui: 'case_match', icon: 'hearts', x: 828, y: 48, r: 32 })}
         ${pageDots}
         ${uxButton({ act: 'pageNext', ui: 'next', icon: pageIdx < pages - 1 ? 'next' : 'back', x: 902, y: 268, r: 34, plate: 'gold' })}
         ${cards}
@@ -47,10 +60,22 @@
       const handlers = {
         back,
         pageNext: () => { pageIdx = (pageIdx + 1) % pages; render(); },
-        word: card => { uxNudge(card); uxWordVoice(card.getAttribute('data-word')); },
+        abcSong: () => uxEnd(s, () => { if (typeof showAbcPiano === 'function') showAbcPiano(() => showWords()); else showTitle(); }),
+        traceMode: () => uxEnd(s, () => { if (typeof showTrace === 'function') showTrace((slice[0] && slice[0].id) || 'a', () => showWords()); else showTitle(); }),
+        caseMatch: () => uxEnd(s, () => { if (typeof showCaseMatch === 'function') showCaseMatch(() => showWords()); else showTitle(); }),
+        word: card => { uxNudge(card); uxWordVoice(card.getAttribute('data-word')); uxConfetti(root.querySelector('.page'), 480, 250, 8); },
       };
       for (let p = 0; p < pages; p++) handlers['pg' + p] = () => { pageIdx = p; render(); };
       uxBind(root, handlers);
+      root.querySelectorAll('[data-trace]').forEach(tBtn => {
+        const lid = tBtn.getAttribute('data-trace');
+        const goTrace = e => {
+          e.stopPropagation();
+          uxEnd(s, () => { if (typeof showTrace === 'function') showTrace(lid, () => showWords()); else showWords(); });
+        };
+        tBtn.addEventListener('click', goTrace);
+        tBtn.addEventListener('keydown', /** @param {KeyboardEvent} e */ e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goTrace(e); } });
+      });
     };
     render();
   }
@@ -79,8 +104,12 @@
       const tray = allTray.slice(trayPage * perPage, trayPage * perPage + perPage);
       const placed = (save.board || []).map((b, i) => {
         const tilt = ((i % 5) - 2) * 5;
-        return `<g class="ux-btn" data-placed="${i}" transform="translate(${b.x} ${b.y}) rotate(${tilt})">
+        const w = core.find(x => x.id === b.id);
+        const on = selected === b.id;
+        return `<g class="ux-btn" data-placed="${b.id}" role="button" tabindex="0" transform="translate(${b.x} ${b.y}) rotate(${tilt})">
           <image href="${SRC('word_' + b.id)}" x="-42" y="-42" width="84" height="84" preserveAspectRatio="xMidYMid meet" filter="url(#softShadow)"/>
+          <rect x="-22" y="28" width="44" height="19" rx="9" fill="${on ? '#ffd27a' : '#ffe5f1'}" stroke="#f287b7" stroke-width="1.6"/>
+          <text class="latin" x="0" y="42" text-anchor="middle" font-size="13" fill="#4e1f3a">${w ? w.letter + w.lower : b.id}</text>
         </g>`;
       }).join('');
       const trayHtml = tray.map((w, i) => {
@@ -120,6 +149,17 @@
         };
         btn.addEventListener('click', choose);
         btn.addEventListener('keydown', /** @param {KeyboardEvent} e */ e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); choose(); } });
+      });
+      root.querySelectorAll('[data-placed]').forEach(pEl => {
+        const wid = pEl.getAttribute('data-placed');
+        const pickPlaced = () => {
+          selected = wid;
+          uxWordVoice(wid);
+          uxSfx('tap');
+          render();
+        };
+        pEl.addEventListener('click', pickPlaced);
+        pEl.addEventListener('keydown', /** @param {KeyboardEvent} e */ e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pickPlaced(); } });
       });
       if (board) {
         board.addEventListener('click', /** @param {MouseEvent} e */ e => {
@@ -168,11 +208,21 @@
     uxLine('me_labrador');
   }
 
-  /* ---------- Pup Gear Locker / Wardrobe ---------- */
+  /* ---------- Pup Gear Locker / Wardrobe (3 Outfits + 5 Hats including Girl Bow & Butterfly Headband) ---------- */
   function showWardrobe(fromMeet) {
     const s = uxScreen('wardrobe');
     const stars = totalStarsCount();
-    const hats = ['wreath', 'detective', 'crown'];
+    const tracedCount = Object.keys(save.traced || {}).filter(k => save.traced[k]).length;
+    const hatRows = [[null, 'bow', 'wreath'], ['butterfly', 'detective', 'crown']];
+    const hatHint = { bow: '★3/✎3', wreath: '★8', butterfly: 'Aa/★10', detective: '★12', crown: '★16' };
+    const isHatOpen = h => {
+      if (!h) return true;
+      if (h === 'bow') return stars >= WARDROBE_UNLOCKS.bow || tracedCount >= 3;
+      if (h === 'butterfly') return stars >= WARDROBE_UNLOCKS.butterfly || (save.caseMatches || 0) >= 1;
+      return stars >= WARDROBE_UNLOCKS[h];
+    };
+    loadArt(['hat_bow', 'hat_wreath', 'hat_butterfly', 'hat_detective', 'hat_crown'], 1200);
+
     const render = () => {
       if (!uxAlive(s)) return;
       const oS = save.outfit.skye, oL = save.outfit.labrador;
@@ -180,33 +230,34 @@
         const need = d === 0 ? 0 : (d === 1 ? WARDROBE_UNLOCKS.d1 : WARDROBE_UNLOCKS.d2);
         const open = stars >= need, active = save.outfit[who].dress === d;
         const cols = who === 'skye' ? ['#ff7cb8', '#5ecbff', '#a48bff'] : ['#2e4c85', '#34945e', '#c94b5b'];
-        return `<g class="ux-btn" data-who="${who}" data-kind="dress" data-val="${d}" data-state="${open ? (active ? 'on' : 'open') : 'lock'}" role="button" tabindex="${open ? 0 : -1}" transform="translate(${cx + (k - 1) * 76} 376)">
+        return `<g class="ux-btn" data-who="${who}" data-kind="dress" data-val="${d}" data-state="${open ? (active ? 'on' : 'open') : 'lock'}" role="button" tabindex="${open ? 0 : -1}" transform="translate(${cx + (k - 1) * 78} 314)">
           <g class="btn-vis" filter="url(#softShadow)">
-            <circle r="32" fill="#fffaf0" stroke="${active ? '#ffd27a' : '#8cb67d'}" stroke-width="${active ? 5 : 2.5}"/>
-            <circle r="21" fill="${cols[d]}" opacity="${open ? 1 : .28}"/>
+            <circle r="31" fill="#fffaf0" stroke="${active ? '#ffd27a' : '#8cb67d'}" stroke-width="${active ? 5 : 2.5}"/>
+            <circle r="20" fill="${cols[d]}" opacity="${open ? 1 : .28}"/>
           </g>
         </g>`;
       }).join('');
-      const hatBtns = (who, cx) => [null, ...hats].map((h, k) => {
-        const need = h ? WARDROBE_UNLOCKS[h] : 0, open = stars >= need, active = save.outfit[who].hat === h;
-        const x = cx + (k - 1.5) * 68;
+      const hatBtns = (who, cx) => hatRows.map((row, rIdx) => row.map((h, k) => {
+        const open = isHatOpen(h), active = save.outfit[who].hat === h;
+        const x = cx + (k - 1) * 78, y = 388 + rIdx * 74;
         const inner = h && SIZES['hat_' + h]
           ? `<image href="${SRC('hat_' + h)}" x="-22" y="-22" width="44" height="44" preserveAspectRatio="xMidYMid meet" opacity="${open ? 1 : .28}"/>`
           : `<text class="latin" y="8" text-anchor="middle" font-size="24" fill="#6b7f70">✕</text>`;
-        return `<g class="ux-btn" data-who="${who}" data-kind="hat" data-val="${h || ''}" data-state="${open ? (active ? 'on' : 'open') : 'lock'}" role="button" tabindex="${open ? 0 : -1}" transform="translate(${x} 454)">
+        const lockTag = h && !open ? `<text y="24" text-anchor="middle" font-size="11" fill="#5e7a67">${hatHint[h] || ''}</text>` : '';
+        return `<g class="ux-btn" data-who="${who}" data-kind="hat" data-val="${h || ''}" data-state="${open ? (active ? 'on' : 'open') : 'lock'}" role="button" tabindex="${open ? 0 : -1}" transform="translate(${x} ${y})">
           <g class="btn-vis" filter="url(#softShadow)">
-            <circle r="32" fill="#fffaf0" stroke="${active ? '#ffd27a' : '#8cb67d'}" stroke-width="${active ? 5 : 2.5}"/>${inner}
+            <circle r="31" fill="#fffaf0" stroke="${active ? '#ffd27a' : '#8cb67d'}" stroke-width="${active ? 5 : 2.5}"/>${inner}${lockTag}
           </g>
         </g>`;
-      }).join('');
+      }).join('')).join('');
 
       const root = uxPaint(`<g class="page">
         <image href="${SRC('bg_woods')}" width="960" height="520" preserveAspectRatio="xMidYMid slice"/>
         <rect width="960" height="520" fill="#112219" opacity=".6"/>
-        <rect x="115" y="70" width="320" height="252" rx="28" fill="#fbe8f1" stroke="#ffd27a" stroke-width="4" filter="url(#softShadow)"/>
-        <rect x="525" y="70" width="320" height="252" rx="28" fill="#e6efe4" stroke="#ffd27a" stroke-width="4" filter="url(#softShadow)"/>
-        <g id="wdSkye" transform="translate(275 294) scale(1.45)"></g>
-        <g id="wdLab" transform="translate(685 300) scale(1.32)"></g>
+        <rect x="115" y="44" width="320" height="226" rx="28" fill="#fbe8f1" stroke="#ffd27a" stroke-width="4" filter="url(#softShadow)"/>
+        <rect x="525" y="44" width="320" height="226" rx="28" fill="#e6efe4" stroke="#ffd27a" stroke-width="4" filter="url(#softShadow)"/>
+        <g id="wdSkye" transform="translate(275 248) scale(1.38)"></g>
+        <g id="wdLab" transform="translate(685 254) scale(1.24)"></g>
         ${dressBtns('skye', 275)}${hatBtns('skye', 275)}
         ${dressBtns('labrador', 685)}${hatBtns('labrador', 685)}
         ${uxButton({ act: 'back', ui: 'back', icon: 'back', x: 56, y: 48, r: 34 })}

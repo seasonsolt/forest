@@ -55,8 +55,7 @@
           hideBubble();
           if (isDev()) window.__wordStats = wordStats;
         } else if (e.type === 'clue' && e.word) {
-          voice.word(e.word);
-          say('spot_' + e.word, { tag: 'spot', maxWait: 4500 });
+          say('spot_' + e.word, { interrupt: true, tag: 'spot', maxWait: 4500 });
         } else if (e.type === 'memory') {
           if (typeof openMemoryOverlay === 'function') openMemoryOverlay(e.memoryId);
         } else if (e.type === 'acorn') {
@@ -72,9 +71,6 @@
           }
           const r0 = g.currentRound();
           if (r0) say('quiz_' + r0.word, { tag: 'prompt', maxWait: 5000 });
-        } else if (e.type === 'word_blended') {
-          voice.word(e.word);
-          say('blend_' + e.word, { tag: 'blend', maxWait: 5000 });
         } else if (e.type === 'stone_assist') {
           say('stone_assist', { interrupt: true, tag: 'assist', maxWait: 4000 });
         } else if (e.type === 'stone_try') {
