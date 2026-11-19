@@ -20,10 +20,10 @@ SPEAKERS = ('labrador', 'skye')
 EL_PREFIX = 'elevenlabs:'
 EL_API = 'https://api.elevenlabs.io'
 EL_SPEED = (0.7, 1.2)
-LABRADOR_EL = EL_PREFIX + 'pz7hOfW7kgI9kF818eDS'   # Jerry - Chinese Mandarin, steady friendly sheriff
+LABRADOR_EL = EL_PREFIX + 'X9smqJI1czUfUHFvbeQk'   # Sheriff Labrador cloned 6:12-6:26 solo speech
 SKYE_EL = EL_PREFIX + 'BT0SH7Hb8NRPpT5xbCgg'       # Lulu - playful Mandarin + English phonics guide
 DEFAULT_VOICES = {
-    'labrador': {'zh': [LABRADOR_EL, '-3%', 'eleven_v4']},
+    'labrador': {'zh': [LABRADOR_EL, '+0%', 'eleven_v4']},
     'skye': {'zh': [SKYE_EL, '+0%', 'eleven_v4'], 'en': [SKYE_EL, '-8%', 'eleven_v4']},
 }
 MANIFEST_NAME = 'vo_manifest.json'
@@ -214,7 +214,10 @@ def plan(content, only, redo, out_dir, sample, manifest=None):
             if only is not None and 'words' not in only and f'word_{wid}' not in only:
                 continue
             fname = f'word_{wid}.mp3'
-            w_text = w['en'] if w['en'][-1] in '.!?' else w['en'] + '.'
+            if w.get('letter') and w.get('wordEn'):
+                w_text = f"{w['letter']}, {w['wordEn']}."
+            else:
+                w_text = w['en'] if w['en'][-1] in '.!?' else w['en'] + '.'
             segs = [{'text': w_text, 'lang': 'en', 'en': True, 'voice': content.voice('skye', 'en')}]
             reason = why(fname, segs)
             if reason:

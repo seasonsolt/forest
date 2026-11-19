@@ -7,16 +7,16 @@ function createGame() {
   const g = {
     state: 'title',   // 'title' | 'play' | 'clear' | 'win'
     index: 0,
-    screen: 0,        // 0 = Scene A (Clue Hunt), 1 = Scene B (Sound Workshop)
+    screen: 0,        // 0 = Scene A (Letter Clue Hunt), 1 = Scene B (Letter Workshop)
     time: 0,
     idleTime: 0,
     hintTarget: null,
     workshopReady: false,
     memoryFound: false,
     hotspots: [],
-    orbs: { got: 0, total: 3, words: [] },
-    acorns: { got: 0, total: 2 },
-    stars: { got: 0, total: 2 },   // alias matching shared HUD/review conventions
+    orbs: { got: 0, total: 4, words: [] },
+    acorns: { got: 0, total: 1 },
+    stars: { got: 0, total: 1 },
     skye: { x: 165, y: 150, tx: 165, ty: 150, facing: 1, cheer: 0 },
     labrador: { x: 120, y: 405, tx: 120, ty: 405, facing: 1, cheer: 0 },
     workshop: null,
@@ -51,18 +51,16 @@ function createGame() {
       g.skye = { x: 145, y: 148, tx: 145, ty: 148, facing: 1, cheer: 0 };
       g.labrador = { x: 92, y: 416, tx: 92, ty: 416, facing: 1, cheer: 0 };
       g.workshop = {
-        mode: lv.mode,
+        mode: lv.mode || 'letter',
         rounds: lv.rounds.map(r => ({
           word: r.word,
-          onset: r.onset,
-          rime: r.rime,
-          onsets: r.onsets.slice(),
-          rimes: r.rimes.slice(),
+          letter: r.letter,
+          lower: r.lower,
+          choices: r.choices.slice(),
         })),
         roundIdx: 0,
-        step: 'onset',
-        pickedOnset: '',
-        pickedRime: lv.mode === 'onset' ? lv.rounds[0].rime : '',
+        step: 'pick',
+        pickedLetter: '',
         misses: 0,
         assistGlow: false,
         solved: lv.rounds.map(() => false),
@@ -83,8 +81,7 @@ function createGame() {
 
     currentChoices() {
       const r = g.currentRound();
-      if (!r || !g.workshop) return [];
-      return g.workshop.step === 'rime' ? r.rimes : r.onsets;
+      return r ? r.choices : [];
     },
 
     resetIdle() {
@@ -101,10 +98,8 @@ function createGame() {
         const nextAny = g.hotspots.find(h => !h.opened);
         return nextAny ? { screen: 0, kind: 'hotspot', id: nextAny.id } : null;
       }
-      const w = g.workshop, r = g.currentRound();
-      if (!w || !r) return null;
-      const val = w.step === 'rime' ? r.rime : r.onset;
-      return { screen: 1, kind: 'stone', part: w.step, val };
+      const r = g.currentRound();
+      return r ? { screen: 1, kind: 'stone', val: r.word } : null;
     },
 
     tapHotspot(id) {
@@ -147,7 +142,7 @@ function createGame() {
       g.resetIdle();
       g.skye.tx = 175; g.skye.ty = 215; g.skye.facing = 1;
       g.labrador.tx = 100; g.labrador.ty = 408; g.labrador.facing = 1;
-      g.emit({ type: 'screen2', auto: !!auto, mode: g.level().mode });
+      g.emit({ type: 'screen2', auto: !!auto, mode: g.level().mode || 'letter' });
       return true;
     },
 
@@ -155,43 +150,28 @@ function createGame() {
       if (g.state !== 'play' || g.screen !== 1 || !g.workshop) return false;
       const w = g.workshop, r = g.currentRound();
       if (!r || w.step === 'done') return false;
-      const val = typeof choice === 'number' ? g.currentChoices()[choice] : String(choice || '');
+      const val = typeof choice === 'number' ? g.currentChoices()[choice] : String(choice || '').toLowerCase();
       if (!val) return false;
       g.resetIdle();
 
-      const expected = w.step === 'rime' ? r.rime : r.onset;
-      if (val !== expected) {
+      if (val !== r.word) {
         w.misses++;
-        if (w.misses >= 2) {
+        if (w.misses >= 1) {
           w.assistGlow = true;
-          g.emit({ type: 'stone_assist', part: w.step, target: expected, word: r.word });
+          g.emit({ type: 'stone_assist', val: r.word, word: r.word });
         }
-        g.emit({ type: 'stone_try', part: w.step, val, expected, misses: w.misses });
+        g.emit({ type: 'stone_try', val, expected: r.word, misses: w.misses });
         return false;
       }
 
-      if (w.step === 'onset') {
-        w.pickedOnset = val;
-        if (w.mode === 'blend') {
-          w.step = 'rime';
-          w.misses = 0;
-          w.assistGlow = false;
-          g.skye.cheer = 0.7;
-          g.emit({ type: 'stone_ok', part: 'onset', val, word: r.word, roundIdx: w.roundIdx });
-          return true;
-        }
-        w.pickedRime = r.rime;
-      } else {
-        w.pickedRime = val;
-      }
-
+      w.pickedLetter = val;
       w.step = 'done';
       w.misses = 0;
       w.assistGlow = false;
       w.solved[w.roundIdx] = true;
       g.skye.cheer = 1.4;
       g.labrador.cheer = 1.2;
-      g.emit({ type: 'word_blended', word: r.word, onset: r.onset, rime: r.rime, roundIdx: w.roundIdx });
+      g.emit({ type: 'word_blended', word: r.word, letter: r.letter, roundIdx: w.roundIdx });
 
       const nextIdx = w.roundIdx + 1;
       if (nextIdx >= w.rounds.length) {
@@ -200,9 +180,8 @@ function createGame() {
         g.emit({ type: lastRoom ? 'win' : 'clear', index: g.index, id: g.level().id });
       } else {
         w.roundIdx = nextIdx;
-        w.step = 'onset';
-        w.pickedOnset = '';
-        w.pickedRime = w.mode === 'onset' ? w.rounds[nextIdx].rime : '';
+        w.step = 'pick';
+        w.pickedLetter = '';
       }
       return true;
     },

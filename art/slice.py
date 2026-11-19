@@ -26,15 +26,19 @@ ATLASES = {
         ['labrador_idle', 'labrador_walk', 'labrador_search', 'labrador_cheer'],
         ['ui_meet', 'hat_wreath', 'hat_detective', 'hat_crown'],
     ],
-    'atlas_words_1': [
-        ['word_cat', 'word_bat', 'word_nap', 'word_frog'],
-        ['word_log', 'word_hop', 'word_pup', 'word_bug'],
-        ['word_run', 'word_pig', 'word_twig', 'word_dig'],
+    'atlas_abc_1': [
+        ['word_a', 'word_b', 'word_c', 'word_d'],
+        ['word_e', 'word_f', 'word_g', 'word_h'],
+        ['word_i', 'word_j', 'word_k', 'word_l'],
     ],
-    'atlas_words_2': [
-        ['word_fox', 'word_box', 'word_sit', 'word_hen'],
-        ['word_net', 'word_fly', 'word_duck', 'word_mud'],
-        ['word_hug', 'word_dog', 'word_drum', 'word_hum'],
+    'atlas_abc_2': [
+        ['word_m', 'word_n', 'word_o', 'word_p'],
+        ['word_q', 'word_r', 'word_s', 'word_t'],
+        ['word_u', 'word_v', 'word_w', 'word_x'],
+    ],
+    'atlas_abc_3': [
+        ['word_y', 'word_z'],
+        ['prop_letter_gem', 'prop_abc_party'],
     ],
     'atlas_props': [
         ['prop_stump', 'prop_bush', 'prop_mushroom', 'prop_lily'],
@@ -198,7 +202,7 @@ def main():
             print(f'WARN missing raw atlas: {atlas_name}')
             continue
         sheet = Image.open(src).convert('RGBA')
-        cells = split_sheet_islands(sheet, 3, 4)
+        cells = split_sheet_islands(sheet, len(grid), len(grid[0]))
         for r, row in enumerate(grid):
             for c, name in enumerate(row):
                 cut = cells[(r, c)]

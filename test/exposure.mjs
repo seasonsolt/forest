@@ -8,27 +8,30 @@ export const THRESHOLD = 6;
 const DOC = 'src/content/exposure.md';
 const read = p => fs.readFileSync(path.join(ROOT, p), 'utf8');
 
-export function computeExposure({ levels, lines }) {
+export function computeExposure({ levels, lines, words }) {
   const hearings = (key, w) => {
     const def = lines[key];
     return def && Array.isArray(def.say) ? def.say.filter(s => s && typeof s === 'object' && s.w === w).length : 0;
   };
+  const roomIdx = new Map(levels.map((lv, idx) => [lv.id, idx]));
+  const core = (words || JSON.parse(read('src/content/words.json'))).filter(w => w.kind === 'core');
   const rows = [];
-  levels.forEach((lv, idx) => {
+  for (const entry of core) {
+    const idx = roomIdx.get(entry.room) ?? 0;
+    const lv = levels[idx];
     const next = levels[idx + 1];
-    for (const w of lv.words) {
-      let learn = 0;
-      for (const x of lv.words) learn += hearings(`learn_${x}`, w);
-      const chapter = hearings(`ch_${lv.id}`, w);
-      const spot = hearings(`spot_${w}`, w);
-      const blend = hearings(`blend_${w}`, w);
-      const clear = hearings(`clear_${lv.id}`, w);
-      const quiz = hearings(`quiz_${w}`, w);
-      const inContext = learn + chapter + spot + blend + clear + quiz;
-      const recall = next ? hearings(`recall_${w}`, w) : 0;
-      rows.push({ room: lv.id, word: w, learn, chapter, spot, blend, clear, quiz, inContext, recall, low: inContext < THRESHOLD });
-    }
-  });
+    const w = entry.id;
+    let learn = 0;
+    for (const x of lv.words) learn += hearings(`learn_${x}`, w);
+    const chapter = hearings(`ch_${lv.id}`, w);
+    const spot = hearings(`spot_${w}`, w);
+    const blend = hearings(`blend_${w}`, w);
+    const clear = hearings(`clear_${lv.id}`, w);
+    const quiz = hearings(`quiz_${w}`, w);
+    const inContext = learn + chapter + spot + blend + clear + quiz;
+    const recall = next ? hearings(`recall_${w}`, w) : 0;
+    rows.push({ room: lv.id, word: w, learn, chapter, spot, blend, clear, quiz, inContext, recall, low: inContext < THRESHOLD });
+  }
   return rows;
 }
 

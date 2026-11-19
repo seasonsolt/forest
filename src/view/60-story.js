@@ -105,14 +105,23 @@
 
   function uxCardRow(words, y, cw, ch, gap) {
     const n = words.length, x0 = 480 - (n * cw + (n - 1) * gap) / 2;
+    const tones = [['#ffe5f1', '#f287b7'], ['#e4f4ff', '#6dbbe8'], ['#fff2cc', '#efb646'], ['#ebfae8', '#7ec476']];
     return words.map((w, i) => {
       const x = x0 + i * (cw + gap), pad = Math.round(cw * .12);
-      const imgH = ch - 56;
+      const imgY = w.letter ? 54 : 14;
+      const imgH = ch - imgY - 46;
+      const [pillBg, pillRim] = tones[i % tones.length];
+      const badge = w.letter
+        ? `<rect x="${cw / 2 - 42}" y="12" width="84" height="36" rx="18" fill="${pillBg}" stroke="${pillRim}" stroke-width="2.5"/>
+           <text class="latin" x="${cw / 2}" y="38" text-anchor="middle" font-size="25" fill="#4e1f3a">${w.letter}${w.lower}</text>`
+        : '';
+      const subLabel = w.wordEn || w.en;
       return `<g class="ux-pop" data-pop="${i}"><g class="ux-btn" data-word="${w.id}" role="button" tabindex="0" aria-label="${w.en}" transform="translate(${x} ${y})">
         <g class="btn-vis" filter="url(#softShadow)">
         <rect width="${cw}" height="${ch}" rx="22" fill="#fffaf0" stroke="#e4b457" stroke-width="3.5"/>
-        ${uxPic(w.icon || 'word_' + w.id, pad, 14, cw - pad * 2, imgH, '', 'meet')}
-        <text class="latin" x="${cw / 2}" y="${ch - 14}" text-anchor="middle" font-size="${cw > 180 ? 32 : 26}" fill="#2b1f09">${w.en}</text>
+        ${badge}
+        ${uxPic(w.icon || 'word_' + w.id, pad, imgY, cw - pad * 2, imgH, '', 'meet')}
+        <text class="latin" x="${cw / 2}" y="${ch - 14}" text-anchor="middle" font-size="${cw > 180 ? 28 : 23}" fill="#2b1f09">${subLabel}</text>
       </g></g></g>`;
     }).join('');
   }
@@ -149,24 +158,59 @@
     render();
   }
 
-  /* ---------- chapter card with "跟我说" sound-wave ripple & confetti ---------- */
+  /* ---------- chapter card with "跟我说" sound-wave ripple & confetti (plus interactive A-Z Rainbow Wall on Room 8) ---------- */
   function showChapter(level, done) {
     const lv = uxLevel(level), words = uxRoomWords(lv), s = uxScreen('chapter');
     uxPreload([uxKey('ch', lv.id), ...words.map(w => uxKey('learn', w.id))]);
-    const n = words.length, cw = 216, ch = 250, gap = 28, x0 = 480 - (n * cw + (n - 1) * gap) / 2;
+    const isRainbow = lv.id === 'camp';
+    const n = words.length, cw = n >= 4 ? 192 : 216, ch = n >= 4 ? 238 : 250, gap = n >= 4 ? 20 : 28;
+    const x0 = 480 - (n * cw + (n - 1) * gap) / 2;
+    const cardY = n >= 4 ? 126 : 118;
+
+    let cardsHtml = uxCardRow(words, cardY, cw, ch, gap);
+    if (isRainbow) {
+      const allAz = WORDS.filter(w => w.kind === 'core');
+      const fills = ['#ffe4f0', '#e4f4ff', '#fff3cc', '#ebfae8', '#f2e8ff', '#ffeede'];
+      const rims = ['#f287b7', '#6dbbe8', '#efb646', '#7ec476', '#a884e6', '#f29a5e'];
+      const rowLens = [7, 7, 6, 6];
+      let cursor = 0;
+      const wall = [];
+      rowLens.forEach((cnt, rIdx) => {
+        const bw = 96, bh = 74, bgap = 12;
+        const rx0 = 480 - (cnt * bw + (cnt - 1) * bgap) / 2;
+        const ry = 76 + rIdx * 86;
+        for (let k = 0; k < cnt && cursor < allAz.length; k++) {
+          const w = allAz[cursor++];
+          const bx = rx0 + k * (bw + bgap);
+          const ci = (rIdx * 7 + k) % fills.length;
+          wall.push(`<g class="ux-pop on"><g class="ux-btn" data-word="${w.id}" role="button" tabindex="0" aria-label="${w.en}" transform="translate(${bx} ${ry})">
+            <g class="btn-vis" filter="url(#softShadow)">
+              <rect width="${bw}" height="${bh}" rx="18" fill="${fills[ci]}" stroke="${rims[ci]}" stroke-width="3.2"/>
+              <text class="latin" x="${bw / 2 - 11}" y="47" text-anchor="middle" font-size="31" fill="#4e1f3a">${w.letter}</text>
+              <text class="latin" x="${bw / 2 + 17}" y="47" text-anchor="middle" font-size="23" fill="#8a4a6e">${w.lower}</text>
+            </g>
+          </g></g>`);
+        }
+      });
+      cardsHtml = `<g filter="url(#softShadow)">
+        <rect x="275" y="18" width="410" height="44" rx="22" fill="#13261b" opacity=".88" stroke="#ffd27a" stroke-width="2.5"/>
+        <text x="480" y="47" text-anchor="middle" font-size="22" fill="#fff7df">A – Z 字母彩虹墙（点字母听发音！）</text>
+      </g>` + wall.join('');
+    }
+
     const root = uxPaint(`<g class="page">
       <image href="${SRC(uxLineArt('ch_' + lv.id, lv.bg))}" width="960" height="520" preserveAspectRatio="xMidYMid slice"/>
       <rect width="960" height="520" fill="#112219" opacity=".52"/>
-      ${uxCardRow(words, 118, cw, ch, gap)}
+      ${cardsHtml}
       <g id="uxCue" opacity="0" transform="translate(480 68)" pointer-events="none">
         <circle class="ux-ripple" r="24" fill="none" stroke="#ffd27a" stroke-width="4"/>
         <circle r="22" fill="#ffd27a" opacity=".25"/>
       </g>
-      ${uxButton({ act: 'go', ui: 'next', icon: 'next', x: 886, y: 452, r: 38, plate: 'gold' })}
+      ${uxButton({ act: 'go', ui: 'next', icon: 'next', x: 886, y: 452, r: 38, plate: 'gold', cls: isRainbow ? 'ux-pulse' : '' })}
     </g>`);
     const finish = () => uxEnd(s, done);
     s.onKey = finish;
-    uxBind(root, { go: finish, word: el => { uxNudge(el); uxWordVoice(el.dataset.word); } });
+    uxBind(root, { go: finish, word: el => { uxNudge(el); uxWordVoice(el.dataset.word); uxConfetti(root.querySelector('.page'), 480, 220, 8); } });
     const cue = root.querySelector('#uxCue');
     const setCue = k => {
       if (k == null) { cue.setAttribute('opacity', '0'); return; }
@@ -175,6 +219,7 @@
     };
     (async () => {
       await uxLine('ch_' + lv.id);
+      if (isRainbow) return;
       for (let k = 0; k < n; k++) {
         if (!uxAlive(s)) return;
         uxPopSlot(root, k); uxSfx('page'); setCue(k);
@@ -289,7 +334,8 @@
     const phaseQuiz = () => {
       const ok = mark();
       const target = words[Math.floor(Math.random() * words.length)] || words[0];
-      const otherLearned = Object.keys(save.words || {}).filter(id => !words.some(w => w.id === id));
+      const validIds = new Set(WORDS.filter(w => w.kind === 'core').map(w => w.id));
+      const otherLearned = Object.keys(save.words || {}).filter(id => validIds.has(id) && !words.some(w => w.id === id));
       const optIds = quizOptions(target.id, words.map(w => w.id), otherLearned, save.words, makeReviewRng(idx * 31 + 7));
       const opts = uxWordList(optIds);
       root.querySelector('#uxStars').setAttribute('transform', 'translate(480 86) scale(.55)');
@@ -338,8 +384,9 @@
       const r = save.rooms && save.rooms[lv.id];
       if (r && Array.isArray(r.stars)) totalStars += r.stars.filter(Boolean).length;
     }
-    const stickerCount = Array.isArray(save.stickers) ? save.stickers.length : 0;
-    const wordCount = Object.values(save.words || {}).filter(w => w && ((w.heard || 0) > 0 || w.seen)).length;
+    const coreIds = new Set(WORDS.filter(w => w.kind === 'core').map(w => w.id));
+    const stickerCount = (Array.isArray(save.stickers) ? save.stickers : []).filter(id => coreIds.has(id)).length;
+    const wordCount = Object.entries(save.words || {}).filter(([id, w]) => coreIds.has(id) && w && ((w.heard || 0) > 0 || w.seen)).length;
     const badge = (cx, cy, iconHtml, num) => `<g transform="translate(${cx} ${cy})">
       <rect x="-78" y="-26" width="156" height="52" rx="26" fill="#13261b" opacity=".88" stroke="#ffd27a" stroke-width="2.5"/>
       <g transform="translate(-44 0)">${iconHtml}</g>

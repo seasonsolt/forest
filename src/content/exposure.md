@@ -3,30 +3,32 @@
 ```
 room    word  learn  chapter  spot  blend  clear  quiz  in-context  recall
 ------  ----  -----  -------  ----  -----  -----  ----  ----------  ------
-tree    cat       3        0     1      2      1     1           8       2
-tree    bat       3        0     1      2      1     1           8       2
-tree    nap       3        0     1      2      1     1           8       2
-pond    frog      3        0     1      2      1     1           8       2
-pond    log       3        0     1      2      1     1           8       2
-pond    hop       3        0     1      2      1     1           8       2
-meadow  pup       3        0     1      2      1     1           8       2
-meadow  bug       3        0     1      2      1     1           8       2
-meadow  run       3        0     1      2      1     1           8       2
-hill    pig       3        0     1      2      1     1           8       2
-hill    twig      3        0     1      2      1     1           8       2
-hill    dig       3        0     1      2      1     1           8       2
-hollow  fox       3        0     1      2      1     1           8       2
-hollow  box       3        0     1      2      1     1           8       2
-hollow  sit       3        0     1      2      1     1           8       2
-nest    hen       3        0     1      2      1     1           8       2
-nest    net       3        0     1      2      1     1           8       2
-nest    fly       3        0     1      2      1     1           8       2
-creek   duck      3        0     1      2      1     1           8       2
-creek   mud       3        0     1      2      1     1           8       2
-creek   hug       3        0     1      2      1     1           8       2
-camp    dog       3        0     1      2      1     1           8       0
-camp    drum      3        0     1      2      1     1           8       0
-camp    hum       3        0     1      2      1     1           8       0
+tree    a         3        0     2      2      0     1           8       2
+tree    b         3        0     2      2      0     1           8       2
+tree    c         3        0     2      2      0     1           8       2
+tree    d         3        0     2      2      0     1           8       2
+pond    e         3        0     2      2      0     1           8       2
+pond    f         3        0     2      2      0     1           8       2
+pond    g         3        0     2      2      0     1           8       2
+pond    h         3        0     2      2      0     1           8       2
+meadow  i         3        0     2      2      0     1           8       2
+meadow  j         3        0     2      2      0     1           8       2
+meadow  k         3        0     2      2      0     1           8       2
+meadow  l         3        0     2      2      0     1           8       2
+hill    m         3        0     2      2      0     1           8       2
+hill    n         3        0     2      2      0     1           8       2
+hill    o         3        0     2      2      0     1           8       2
+hill    p         3        0     2      2      0     1           8       2
+hollow  q         3        0     2      2      0     1           8       2
+hollow  r         3        0     2      2      0     1           8       2
+hollow  s         3        0     2      2      0     1           8       2
+hollow  t         3        0     2      2      0     1           8       2
+nest    u         3        0     2      2      0     1           8       2
+nest    v         3        0     2      2      0     1           8       2
+nest    w         3        0     2      2      0     1           8       2
+creek   x         3        0     2      2      0     1           8       2
+creek   y         3        0     2      2      0     1           8       2
+creek   z         3        0     2      2      0     1           8       2
 ```
 
-0 of 24 core words are below 6 in-context hearings; in-context ranges 8..8
+0 of 26 core words are below 6 in-context hearings; in-context ranges 8..8

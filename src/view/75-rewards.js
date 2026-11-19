@@ -10,63 +10,73 @@
     return n;
   }
 
-  /* ---------- Wordbook (24 core words in 2 clean pages of 12, cards >= 170x110 -> > 64 CSS px) ---------- */
+  /* ---------- 26-Letter Alphabet Book (26 letters across 3 spacious 3x3 pages, cards 238x112 -> ~250x118 CSS px) ---------- */
   function showWords() {
     const core = WORDS.filter(w => w.kind === 'core');
+    const pages = Math.max(1, Math.ceil(core.length / 9));
     let pageIdx = 0;
     const s = uxScreen('words');
     const render = () => {
       if (!uxAlive(s)) return;
-      const slice = core.slice(pageIdx * 12, pageIdx * 12 + 12);
+      const slice = core.slice(pageIdx * 9, pageIdx * 9 + 9);
       const cards = slice.map((w, i) => {
-        const col = i % 4, row = (i / 4) | 0;
-        const x = 94 + col * 198, y = 96 + row * 124;
+        const col = i % 3, row = (i / 3) | 0;
+        const x = 104 + col * 256, y = 92 + row * 124;
         const learned = !!(save.words[w.id] && (save.words[w.id].heard > 0 || save.words[w.id].seen));
         return `<g class="ux-btn" data-word="${w.id}" role="button" tabindex="0" aria-label="${w.en}" transform="translate(${x} ${y})">
           <g class="btn-vis" filter="url(#softShadow)">
-            <rect width="182" height="112" rx="18" fill="${learned ? '#fffaf0' : '#1b3124'}" stroke="${learned ? '#ffd27a' : '#4a6b56'}" stroke-width="3"/>
-            <image href="${SRC(w.icon || 'word_' + w.id)}" x="14" y="10" width="76" height="76" preserveAspectRatio="xMidYMid meet" ${learned ? '' : 'filter="url(#silhouette)" opacity=".5"'}/>
-            <text class="latin" x="132" y="64" text-anchor="middle" font-size="24" fill="${learned ? '#36260b' : '#73917e'}">${learned ? w.en : '???'}</text>
+            <rect width="238" height="112" rx="20" fill="${learned ? '#fffaf0' : '#1b3124'}" stroke="${learned ? '#ffd27a' : '#4a6b56'}" stroke-width="3"/>
+            <image href="${SRC(w.icon || 'word_' + w.id)}" x="14" y="16" width="78" height="78" preserveAspectRatio="xMidYMid meet" ${learned ? '' : 'filter="url(#silhouette)" opacity=".5"'}/>
+            <text class="latin" x="164" y="54" text-anchor="middle" font-size="30" fill="${learned ? '#b8326a' : '#73917e'}">${learned ? (w.letter ? w.letter + w.lower : w.en) : '???'}</text>
+            <text class="latin" x="164" y="84" text-anchor="middle" font-size="18" fill="${learned ? '#36260b' : '#73917e'}">${learned ? (w.wordEn || '') : ''}</text>
           </g>
         </g>`;
       }).join('');
-      const pageDots = [0, 1].map(p => `<circle class="ux-btn" data-act="pg${p}" cx="${460 + p * 40}" cy="482" r="14" fill="${p === pageIdx ? '#ffd27a' : '#486b54'}" stroke="#fff7e6" stroke-width="2"/>`).join('');
+      const dotX0 = 480 - ((pages - 1) * 40) / 2;
+      const pageDots = Array.from({ length: pages }, (_, p) => `<circle class="ux-btn" data-act="pg${p}" cx="${dotX0 + p * 40}" cy="482" r="14" fill="${p === pageIdx ? '#ffd27a' : '#486b54'}" stroke="#fff7e6" stroke-width="2"/>`).join('');
       const root = uxPaint(`<g class="page">
         <image href="${SRC('bg_woods')}" width="960" height="520" preserveAspectRatio="xMidYMid slice"/>
         <rect width="960" height="520" fill="#112219" opacity=".68"/>
         ${uxButton({ act: 'back', ui: 'back', icon: 'back', x: 56, y: 48, r: 34 })}
         ${pageDots}
-        ${uxButton({ act: 'pageNext', ui: 'next', icon: pageIdx === 0 ? 'next' : 'back', x: 902, y: 268, r: 34, plate: 'gold' })}
+        ${uxButton({ act: 'pageNext', ui: 'next', icon: pageIdx < pages - 1 ? 'next' : 'back', x: 902, y: 268, r: 34, plate: 'gold' })}
         ${cards}
       </g>`);
       const back = () => uxEnd(s, () => showTitle());
       s.onKey = back;
-      uxBind(root, {
+      const handlers = {
         back,
-        pg0: () => { pageIdx = 0; render(); },
-        pg1: () => { pageIdx = 1; render(); },
-        pageNext: () => { pageIdx = 1 - pageIdx; render(); },
+        pageNext: () => { pageIdx = (pageIdx + 1) % pages; render(); },
         word: card => { uxNudge(card); uxWordVoice(card.getAttribute('data-word')); },
-      });
+      };
+      for (let p = 0; p < pages; p++) handlers['pg' + p] = () => { pageIdx = p; render(); };
+      uxBind(root, handlers);
     };
     render();
   }
 
-  /* ---------- Sticker Treehouse Board (earned stickers placed with pointer or keyboard, speaks word) ---------- */
+  /* ---------- Sticker Treehouse Board (all 26 A-Z stickers, paginated 10-per-page tray) ---------- */
   function showStickers() {
     const core = WORDS.filter(w => w.kind === 'core');
-    const unlocked = new Set(save.stickers || []);
+    const coreIds = new Set(core.map(w => w.id));
+    const unlocked = new Set((save.stickers || []).filter(id => coreIds.has(id)));
     for (const lv of LEVELS) {
       const r = save.rooms && save.rooms[lv.id];
       if (!r || !Array.isArray(r.stars)) continue;
-      lv.words.forEach((wid, k) => { if (r.stars[k]) unlocked.add(wid); });
+      if (r.cleared || r.stars.some(Boolean)) lv.words.forEach(wid => { if (coreIds.has(wid)) unlocked.add(wid); });
     }
     save.stickers = [...unlocked];
+    if (Array.isArray(save.board)) save.board = save.board.filter(b => coreIds.has(b.id));
     const s = uxScreen('stickers');
     let selected = null;
+    let trayPage = 0;
     const render = () => {
       if (!uxAlive(s)) return;
-      const tray = core.filter(w => unlocked.has(w.id)).slice(0, 12);
+      const allTray = core.filter(w => unlocked.has(w.id));
+      const perPage = 10;
+      const trayPages = Math.max(1, Math.ceil(allTray.length / perPage));
+      trayPage = trayPage % trayPages;
+      const tray = allTray.slice(trayPage * perPage, trayPage * perPage + perPage);
       const placed = (save.board || []).map((b, i) => {
         const tilt = ((i % 5) - 2) * 5;
         return `<g class="ux-btn" data-placed="${i}" transform="translate(${b.x} ${b.y}) rotate(${tilt})">
@@ -74,25 +84,26 @@
         </g>`;
       }).join('');
       const trayHtml = tray.map((w, i) => {
-        const x = 110 + (i % 6) * 130, y = i < 6 ? 414 : 478;
+        const x = 128 + (i % 5) * 145, y = i < 5 ? 414 : 478;
         const on = selected === w.id;
         return `<g class="ux-btn" data-st="${w.id}" role="button" tabindex="0" transform="translate(${x} ${y})">
-          <circle r="32" fill="${on ? '#ffd27a' : '#fffaf0'}" stroke="${on ? '#e67e22' : '#9ac090'}" stroke-width="3"/>
-          <image href="${SRC('word_' + w.id)}" x="-24" y="-24" width="48" height="48" preserveAspectRatio="xMidYMid meet"/>
+          <circle r="30" fill="${on ? '#ffd27a' : '#fffaf0'}" stroke="${on ? '#e67e22' : '#9ac090'}" stroke-width="3"/>
+          <image href="${SRC('word_' + w.id)}" x="-22" y="-22" width="44" height="44" preserveAspectRatio="xMidYMid meet"/>
         </g>`;
       }).join('');
+      const nextBtn = trayPages > 1 ? uxButton({ act: 'trayNext', ui: 'next', icon: 'next', x: 842, y: 446, r: 32, plate: 'gold' }) : '';
       const root = uxPaint(`<g class="page">
         <image href="${SRC('bg_meadow')}" width="960" height="520" preserveAspectRatio="xMidYMid slice"/>
         <rect width="960" height="520" fill="#112219" opacity=".45"/>
         <rect id="stkBoard" x="115" y="48" width="730" height="316" rx="28" fill="#fffaf0" opacity=".88" stroke="#d6a44e" stroke-width="5" filter="url(#softShadow)"/>
         ${placed}
         <rect x="64" y="378" width="832" height="132" rx="24" fill="#14291d" opacity=".85" stroke="#8cb67d" stroke-width="2"/>
-        ${trayHtml}
+        ${trayHtml}${nextBtn}
         ${uxButton({ act: 'back', ui: 'back', icon: 'back', x: 56, y: 48, r: 34 })}
       </g>`);
       const back = () => { saveWrite(); uxEnd(s, () => showTitle()); };
       s.onKey = back;
-      uxBind(root, { back });
+      uxBind(root, { back, trayNext: () => { trayPage = (trayPage + 1) % trayPages; render(); } });
       const board = root.querySelector('#stkBoard');
       const placeAt = (wid, bx, by) => {
         if (!save.board) save.board = [];

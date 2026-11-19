@@ -11,7 +11,8 @@
     const av = game.screen === 0 ? 'portrait_labrador' : 'portrait_skye';
     const hatHtml = hat && SIZES['hat_' + hat] ? `<image id="uxAvHat" href="${SRC('hat_' + hat)}" x="27" y="4" width="36" height="24" preserveAspectRatio="xMidYMid meet"/>` : '';
     const dots = [0, 1].map(k => `<circle cx="${38 + k * 14}" cy="84" r="${k === game.screen ? 5 : 3.5}" fill="${k === game.screen ? '#ffd27a' : '#80a875'}" stroke="#fff7e6" stroke-width="1.2"/>`).join('');
-    const countText = game.screen === 0 ? `${game.orbs.got}/${game.orbs.total}` : `${Math.min(3, (game.workshop ? game.workshop.roundIdx : 0) + 1)}/3`;
+    const wTotal = (game.workshop && game.workshop.rounds && game.workshop.rounds.length) || 4;
+    const countText = game.screen === 0 ? `${game.orbs.got}/${game.orbs.total}` : `${Math.min(wTotal, (game.workshop ? game.workshop.roundIdx : 0) + 1)}/${wTotal}`;
     const counterIcon = game.screen === 0 ? 'prop_orb' : 'prop_stone';
 
     hud.innerHTML = `<g class="hud-bar">
@@ -100,7 +101,7 @@
         <g class="btn-vis" filter="url(#softShadow)">
           <rect width="192" height="158" rx="22" fill="${open ? '#fffaf0' : '#1b3124'}" stroke="${open ? '#ffd27a' : '#4a6b56'}" stroke-width="3.5"/>
           <image href="${SRC(lv.bg)}" x="10" y="10" width="172" height="104" preserveAspectRatio="xMidYMid slice" opacity="${open ? 1 : .28}"/>
-          <text class="latin" x="26" y="146" text-anchor="middle" font-size="22" fill="${open ? '#2b4a36' : '#73917e'}">${i + 1}</text>
+          <text class="latin" x="24" y="146" text-anchor="middle" font-size="20" fill="${open ? '#2b4a36' : '#73917e'}">${lv.label || (i + 1)}</text>
           ${starRow}
         </g>
       </g>`;
@@ -138,9 +139,9 @@
       <g transform="translate(220 75)" filter="url(#softShadow)">
         <rect width="520" height="370" rx="28" fill="#fffaf0" stroke="#ffd27a" stroke-width="4"/>
         <text x="260" y="48" text-anchor="middle" font-size="28" fill="#1c3526">家长设置与学习统计</text>
-        <text x="48" y="96" font-size="20" fill="#2d4c39">已听掌握核心词：${heard} / ${core.length} · 测试首答率：${acc} · 累计探索：${mins} 分钟</text>
+        <text x="48" y="96" font-size="20" fill="#2d4c39">已听掌握字母：${heard} / ${core.length} · 测试首答率：${acc} · 累计探索：${mins} 分钟</text>
         <g class="ux-btn" data-m="subs" transform="translate(48 130)"><rect width="424" height="52" rx="14" fill="#edf5ea" stroke="#9ac090" stroke-width="2"/><text x="24" y="33" font-size="20" fill="#1c3526">中英字幕显示：${setting('subtitles') ? '开启' : '关闭'}</text></g>
-        <g class="ux-btn" data-m="eng" transform="translate(48 196)"><rect width="424" height="52" rx="14" fill="#edf5ea" stroke="#9ac090" stroke-width="2"/><text x="24" y="33" font-size="20" fill="#1c3526">英文教学模式：${setting('english') === 'words+phrases' ? '核心词 + 短句' : '仅核心词'}</text></g>
+        <g class="ux-btn" data-m="eng" transform="translate(48 196)"><rect width="424" height="52" rx="14" fill="#edf5ea" stroke="#9ac090" stroke-width="2"/><text x="24" y="33" font-size="20" fill="#1c3526">英文教学模式：${setting('english') === 'words+phrases' ? '字母 + 短句' : '仅字母和单词'}</text></g>
         <g class="ux-btn" data-m="snd" transform="translate(48 262)"><rect width="202" height="52" rx="14" fill="#edf5ea" stroke="#9ac090" stroke-width="2"/><text x="24" y="33" font-size="20" fill="#1c3526">声音：${setting('sound') ? '开启' : '静音'}</text></g>
         <g class="ux-btn" data-m="close" transform="translate(270 262)"><rect width="202" height="52" rx="14" fill="url(#goldGrad)" stroke="#d6a44e" stroke-width="2"/><text x="101" y="33" text-anchor="middle" font-size="22" fill="#4a2605">关闭返回</text></g>
       </g>`;

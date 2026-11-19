@@ -7,7 +7,7 @@
     "key.webp", "bg_woods.webp", "ui_meet.webp",
     "fx_star.webp", "fx_heart.webp",
     "prop_stump.webp", "prop_bush.webp", "prop_mushroom.webp", "prop_lily.webp", "prop_rock.webp", "prop_nest.webp",
-    "prop_orb.webp", "prop_postcard.webp", "prop_stone.webp", "prop_bench.webp",
+    "prop_orb.webp", "prop_postcard.webp", "prop_stone.webp", "prop_bench.webp", "prop_letter_gem.webp", "prop_abc_party.webp",
     "skye_idle.webp", "skye_fly.webp", "skye_cheer.webp", "portrait_skye.webp",
     "labrador_idle.webp", "labrador_walk.webp", "labrador_search.webp", "labrador_cheer.webp", "portrait_labrador.webp"
   ];/*END_TITLE_ART*/
@@ -18,7 +18,7 @@
     const lineArt = key => { const d = L[key]; if (d && d.art) add(d.art); };
     add(level.bg);
     for (const h of level.sceneA || []) add(h.prop);
-    ['prop_orb', 'prop_postcard', 'prop_stone', 'prop_bench', 'fx_star', 'fx_heart'].forEach(add);
+    ['prop_orb', 'prop_postcard', 'prop_stone', 'prop_bench', 'prop_letter_gem', 'prop_abc_party', 'fx_star', 'fx_heart'].forEach(add);
     (level.words || []).concat(o.extraWords || []).forEach(w => add(`word_${w}`));
     lineArt(`ch_${level.id}`); lineArt(`clear_${level.id}`);
     if (level.memoryId) lineArt(`mem_${level.memoryId}`);

@@ -62,14 +62,16 @@
         } else if (e.type === 'acorn') {
           say('clue_' + (1 + (e.got % 4)), { tag: 'clue', maxWait: 3000 });
         } else if (e.type === 'workshop_ready') {
-          say('screen2_' + g.level().mode, { tag: 'ws', maxWait: 5000 });
+          say('screen2_letter', { tag: 'ws', maxWait: 5000 });
         } else if (e.type === 'screen2') {
           if (!save.flags.tutorial) {
             save.flags.tutorial = true; saveSoon();
             say('tutor_phonics', { tag: 'tutor', maxWait: 5000 });
           } else {
-            say('screen2_' + g.level().mode, { tag: 'ws', maxWait: 5000 });
+            say('screen2_letter', { tag: 'ws', maxWait: 5000 });
           }
+          const r0 = g.currentRound();
+          if (r0) say('quiz_' + r0.word, { tag: 'prompt', maxWait: 5000 });
         } else if (e.type === 'word_blended') {
           voice.word(e.word);
           say('blend_' + e.word, { tag: 'blend', maxWait: 5000 });

@@ -1,5 +1,5 @@
-  /* Woodland stage rendering: backdrop parallax, ambient wildlife, Scene A clue hotspots, and Scene B Phonics Sound Workshop. */
-  let sceneDrawn = { idx: -1, screen: -1, round: -1, step: '', workshopReady: false };
+  /* Woodland stage rendering: backdrop parallax, ambient wildlife, Scene A letter hotspots, and Scene B 26-Letter Workshop. */
+  let sceneDrawn = { idx: -1, screen: -1, round: -1, step: '', workshopReady: false, assist: false, pickedLetter: '' };
 
   function drawStageStatic(lv) {
     $('bg').setAttribute('href', SRC(lv.bg));
@@ -63,10 +63,9 @@
     for (const h of g.hotspots) {
       const grp = el('g', {
         class: 'hotspot', 'data-hot': h.id, role: 'button', tabindex: '0',
-        'aria-label': h.kind === 'word' && h.word ? h.word : (h.kind === 'memory' ? '明信片' : '金星果'),
+        'aria-label': h.kind === 'word' && h.word ? h.word.toUpperCase() : (h.kind === 'memory' ? '明信片' : '金星果'),
         transform: `translate(${h.x} ${h.y})`,
       }, box);
-      // Generous invisible hit circle >= 92 stage units (~90 CSS px at 1024x768)
       el('circle', { r: Math.max(h.r, 46), fill: 'transparent' }, grp);
       el('ellipse', { cx: 0, cy: 36, rx: 38, ry: 9, fill: '#0b1811', opacity: '.28' }, grp);
       if (!h.opened) {
@@ -79,8 +78,14 @@
       img(h.prop, -dw / 2, -dh / 2 - 4, dw, dh, grp, { opacity: h.opened ? '.52' : '1' });
 
       if (h.opened) {
-        const reward = h.kind === 'word' ? 'prop_orb' : h.kind === 'memory' ? 'prop_postcard' : 'fx_star';
-        img(reward, -18, -54, 36, 36, grp);
+        if (h.kind === 'word' && h.word) {
+          el('rect', { x: -19, y: -62, width: 38, height: 38, rx: 11, fill: '#ffe8f3', stroke: '#f58ab8', 'stroke-width': 3 }, grp);
+          const lt = el('text', { class: 'latin', x: 0, y: -36, 'text-anchor': 'middle', 'font-size': 22, fill: '#b8326a' }, grp);
+          lt.textContent = String(h.word).toUpperCase();
+        } else {
+          const reward = h.kind === 'memory' ? 'prop_postcard' : 'fx_star';
+          img(reward, -18, -54, 36, 36, grp);
+        }
       } else {
         el('circle', { cx: 0, cy: -36, r: 5, fill: '#fff5ba', opacity: '.85', class: 'flicker' }, grp);
       }
@@ -89,7 +94,7 @@
     }
 
     if (g.workshopReady) {
-      const wb = el('g', { class: 'ux-btn ux-pulse', 'data-act': 'enter-workshop', role: 'button', tabindex: '0', 'aria-label': '进入拼读工坊', transform: 'translate(840 430)' }, box);
+      const wb = el('g', { class: 'ux-btn ux-pulse', 'data-act': 'enter-workshop', role: 'button', tabindex: '0', 'aria-label': '进入字母工坊', transform: 'translate(840 430)' }, box);
       el('circle', { r: 62, fill: 'url(#warm)' }, wb);
       const vis = el('g', { class: 'btn-vis' }, wb);
       el('circle', { r: 44, fill: 'url(#goldGrad)', stroke: '#fff7de', 'stroke-width': 4, filter: 'url(#softShadow)' }, vis);
@@ -109,77 +114,106 @@
     // Workbench surface
     const [bw, bh] = SIZES.prop_bench || [220, 150];
     const bScale = 360 / bw;
-    img('prop_bench', 480 - (bw * bScale) / 2, 250, bw * bScale, bh * bScale, box);
+    img('prop_bench', 480 - (bw * bScale) / 2, 264, bw * bScale, bh * bScale, box);
 
-    // Rescued animal / target illustration centerpiece neatly below the Phonics Plaque
-    const animalOuter = el('g', { transform: 'translate(480 202)' }, box);
+    // Mystery Crystal Star + subtle mascot silhouette before reveal ("点触字母变萌物")
+    const animalOuter = el('g', { transform: 'translate(480 212)' }, box);
     const animalG = el('g', { id: 'wsAnimal' }, animalOuter);
-    el('circle', { r: 78, fill: 'url(#sun)', class: 'flicker' }, animalG);
-    el('ellipse', { cx: 0, cy: 56, rx: 52, ry: 11, fill: '#0b1811', opacity: '.28' }, animalG);
+    el('circle', { r: 84, fill: 'url(#sun)', class: 'flicker' }, animalG);
+    el('ellipse', { cx: 0, cy: 60, rx: 56, ry: 12, fill: '#0b1811', opacity: '.28' }, animalG);
     const wIcon = 'word_' + round.word;
     const [ww, wh] = SIZES[wIcon] || [200, 200];
-    const ws = 118 / Math.max(ww, wh);
-    img(wIcon, -(ww * ws) / 2, -(wh * ws) / 2 - 2, ww * ws, wh * ws, animalG);
+    const ws = 132 / Math.max(ww, wh);
+    img(wIcon, -(ww * ws) / 2, -(wh * ws) / 2 - 2, ww * ws, wh * ws, animalG, { filter: 'url(#silhouette)', opacity: '.26' });
+    const [gw, gh] = SIZES.prop_letter_gem || [180, 178];
+    const gs = 112 / Math.max(gw, gh);
+    img('prop_letter_gem', -(gw * gs) / 2, -(gh * gs) / 2 - 4, gw * gs, gh * gs, animalG, { class: 'ux-anim-pulse' });
 
-    // Sound-Bridge Phonics Plaque: [ _ ] + [ rime ] or [ _ ] + [ _ ]
-    const plaque = el('g', { transform: 'translate(480 84)', filter: 'url(#softShadow)' }, box);
-    el('rect', { x: -165, y: -34, width: 330, height: 68, rx: 22, fill: '#fff8e7', stroke: '#d6a44e', 'stroke-width': 4 }, plaque);
+    // Top Interactive Audio Listening Plaque (clickable to replay the spoken prompt)
+    const wObj = WORDS.find(x => x.id === round.word);
+    const plaque = el('g', {
+      class: 'ux-btn', 'data-act': 'replay-prompt', role: 'button', tabindex: '0',
+      'aria-label': '再听一遍字母', transform: 'translate(480 86)',
+    }, box);
+    const pVis = el('g', { class: 'btn-vis', filter: 'url(#softShadow)' }, plaque);
+    el('rect', { id: 'wsPlaqueBg', x: -168, y: -34, width: 336, height: 68, rx: 24, fill: w.pickedLetter ? '#fff0c8' : '#fffaf0', stroke: w.pickedLetter ? '#f287b7' : '#f0b857', 'stroke-width': 4 }, pVis);
+    // Warm speaker emblem on left side
+    el('circle', { cx: -118, cy: 0, r: 21, fill: '#ffd984', stroke: '#e89d2f', 'stroke-width': 2 }, pVis);
+    el('path', { d: 'M-126 -5H-120L-113 -11V11L-120 5H-126Z', fill: '#5a2e08' }, pVis);
+    el('path', { d: 'M-109 -6A9 9 0 0 1 -109 6M-104 -10A15 15 0 0 1 -104 10', fill: 'none', stroke: '#5a2e08', 'stroke-width': 2.4, 'stroke-linecap': 'round' }, pVis);
+    const pTxt = el('text', {
+      id: 'wsPlaqueTxt', class: 'latin', x: 24, y: 11, 'text-anchor': 'middle', 'font-size': w.pickedLetter ? 28 : 34,
+      fill: w.pickedLetter ? '#b8326a' : '#7a5418',
+    }, pVis);
+    pTxt.textContent = w.pickedLetter ? `${round.letter}${round.lower} · ${wObj ? wObj.wordEn : round.word}` : '?';
+    plaque.addEventListener('click', () => onWorkshopPromptReplay());
+    plaque.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onWorkshopPromptReplay(); } });
 
-    const drawSlot = (cx, text, filled, active) => {
-      el('rect', {
-        x: cx - 64, y: -24, width: 128, height: 48, rx: 15,
-        fill: filled ? '#ffd97d' : (active ? '#fff0c4' : '#e6edd8'),
-        stroke: active ? '#e67e22' : '#9db58d', 'stroke-width': active ? 3.5 : 2,
-      }, plaque);
-      const t = el('text', {
-        class: 'latin', x: cx, y: 10, 'text-anchor': 'middle', 'font-size': 32,
-        fill: filled ? '#5a2e08' : '#73856b',
-      }, plaque);
-      t.textContent = text || '?';
-    };
-    drawSlot(-74, w.pickedOnset || (w.step === 'onset' ? '?' : round.onset), !!w.pickedOnset, w.step === 'onset');
-    const plus = el('text', { class: 'latin', x: 0, y: 9, 'text-anchor': 'middle', 'font-size': 28, fill: '#8e6b3e' }, plaque);
-    plus.textContent = '+';
-    const rimeText = w.mode === 'onset' ? round.rime : (w.pickedRime || '?');
-    drawSlot(74, rimeText, w.mode === 'onset' || !!w.pickedRime, w.step === 'rime');
-
-    // Progress dots across the 3 words in the round
+    // Dynamic centered progress dots across 3 or 4 rounds
+    const dotX0 = 480 - ((w.rounds.length - 1) * 28) / 2;
     for (let i = 0; i < w.rounds.length; i++) {
       el('circle', {
-        cx: 452 + i * 28, cy: 28, r: w.solved[i] ? 8 : (i === w.roundIdx ? 9 : 6),
+        cx: dotX0 + i * 28, cy: 28, r: w.solved[i] ? 8 : (i === w.roundIdx ? 9 : 6),
         fill: w.solved[i] ? '#ffd27a' : (i === w.roundIdx ? '#fff8d6' : '#587863'),
         stroke: '#fff7e6', 'stroke-width': 2,
       }, box);
     }
 
-    // 3 large wooden Phonics Sound Stones along bottom row (>= 100px hit area)
+    // 3 giant candy-pastel Letter Blocks along bottom row (>= 114 stage units)
+    const palette = [
+      ['#ffe5f1', '#f287b7'],
+      ['#e4f4ff', '#6dbbe8'],
+      ['#fff3cc', '#efb646'],
+    ];
     const choices = g.currentChoices();
-    const xs = [265, 480, 695];
-    choices.forEach((chunk, idx) => {
+    const xs = [250, 480, 710];
+    choices.forEach((cid, idx) => {
       const cx = xs[idx], cy = 428;
-      const expected = w.step === 'rime' ? round.rime : round.onset;
-      const glowAssist = w.assistGlow && chunk === expected;
+      const glowAssist = w.assistGlow && cid === round.word;
+      const [bgCol, rimCol] = palette[idx % palette.length];
       const btn = el('g', {
-        class: 'stone-btn' + (glowAssist ? ' ux-pulse' : ''), 'data-stone': chunk,
-        role: 'button', tabindex: '0', 'aria-label': chunk, transform: `translate(${cx} ${cy})`,
+        class: 'stone-btn' + (glowAssist ? ' ux-pulse' : ''), 'data-stone': cid,
+        role: 'button', tabindex: '0', 'aria-label': String(cid).toUpperCase(), transform: `translate(${cx} ${cy})`,
       }, box);
-      el('rect', { x: -72, y: -56, width: 144, height: 112, rx: 28, fill: 'transparent' }, btn);
+      el('rect', { x: -80, y: -57, width: 160, height: 114, rx: 28, fill: 'transparent' }, btn);
       if (glowAssist) {
-        el('rect', { class: 'flicker', x: -70, y: -52, width: 140, height: 104, rx: 26, fill: 'none', stroke: '#ffd27a', 'stroke-width': 5 }, btn);
+        el('rect', { class: 'flicker', x: -80, y: -57, width: 160, height: 114, rx: 28, fill: 'none', stroke: '#ffd27a', 'stroke-width': 5 }, btn);
       }
       const vis = el('g', { class: 'stone-vis', filter: 'url(#softShadow)' }, btn);
-      img('prop_stone', -68, -48, 136, 96, vis);
-      const lbl = el('text', {
-        class: 'latin', x: 0, y: 12, 'text-anchor': 'middle', 'font-size': 42, fill: '#4e2706',
-        stroke: '#fff6de', 'stroke-width': 3, 'paint-order': 'stroke',
-      }, vis);
-      lbl.textContent = chunk;
+      el('rect', { x: -74, y: -50, width: 148, height: 100, rx: 24, fill: bgCol, stroke: rimCol, 'stroke-width': 4.5 }, vis);
+      el('rect', { x: -66, y: -42, width: 132, height: 84, rx: 18, fill: '#ffffff', opacity: '.55' }, vis);
+      const up = el('text', { class: 'latin', x: -16, y: 17, 'text-anchor': 'middle', 'font-size': 50, fill: '#4e1f3a' }, vis);
+      up.textContent = String(cid).toUpperCase();
+      const lo = el('text', { class: 'latin', x: 24, y: 17, 'text-anchor': 'middle', 'font-size': 36, fill: '#8a4a6e' }, vis);
+      lo.textContent = String(cid).toLowerCase();
 
-      btn.addEventListener('pointerenter', () => onStoneHover(chunk));
-      btn.addEventListener('focus', () => onStoneHover(chunk));
-      btn.addEventListener('click', () => onStoneClick(chunk, btn));
-      btn.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onStoneClick(chunk, btn); } });
+      btn.addEventListener('pointerenter', () => onStoneHover(cid));
+      btn.addEventListener('focus', () => onStoneHover(cid));
+      btn.addEventListener('click', () => onStoneClick(cid, btn));
+      btn.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onStoneClick(cid, btn); } });
     });
+  }
+
+  function revealWorkshopMascot(wordId) {
+    const animalG = $('wsAnimal');
+    if (animalG) {
+      animalG.textContent = '';
+      el('circle', { r: 96, fill: 'url(#warm)', class: 'flicker' }, animalG);
+      el('ellipse', { cx: 0, cy: 62, rx: 58, ry: 12, fill: '#0b1811', opacity: '.28' }, animalG);
+      const wIcon = 'word_' + wordId;
+      const [ww, wh] = SIZES[wIcon] || [200, 200];
+      const ws = 154 / Math.max(ww, wh);
+      const popG = el('g', { class: 'ux-pop on' }, animalG);
+      img(wIcon, -(ww * ws) / 2, -(wh * ws) / 2 - 4, ww * ws, wh * ws, popG, { class: 'ux-anim-pulse' });
+    }
+    const wObj = WORDS.find(x => x.id === wordId);
+    const bg = $('wsPlaqueBg'), txt = $('wsPlaqueTxt');
+    if (bg) { bg.setAttribute('fill', '#fff0c8'); bg.setAttribute('stroke', '#f287b7'); }
+    if (txt && wObj) {
+      txt.setAttribute('fill', '#b8326a');
+      txt.setAttribute('font-size', '28');
+      txt.textContent = `${wObj.letter}${wObj.lower} · ${wObj.wordEn}`;
+    }
   }
 
   function renderStage(g, force) {
@@ -187,14 +221,14 @@
     const w = g.workshop;
     const needStatic = force || sceneDrawn.idx !== g.index;
     const needScene = needStatic || sceneDrawn.screen !== g.screen || sceneDrawn.workshopReady !== g.workshopReady
-      || (g.screen === 1 && w && (sceneDrawn.round !== w.roundIdx || sceneDrawn.step !== w.step || sceneDrawn.assist !== w.assistGlow || sceneDrawn.pickedOnset !== w.pickedOnset));
+      || (g.screen === 1 && w && (sceneDrawn.round !== w.roundIdx || sceneDrawn.step !== w.step || sceneDrawn.assist !== w.assistGlow || sceneDrawn.pickedLetter !== w.pickedLetter));
     if (needStatic) drawStageStatic(lv);
     if (needScene) {
       if (g.screen === 0) drawSceneA(g);
       else drawSceneB(g);
       sceneDrawn = {
         idx: g.index, screen: g.screen, round: w ? w.roundIdx : -1, step: w ? w.step : '',
-        workshopReady: g.workshopReady, assist: !!(w && w.assistGlow), pickedOnset: w ? w.pickedOnset : '',
+        workshopReady: g.workshopReady, assist: !!(w && w.assistGlow), pickedLetter: w ? w.pickedLetter : '',
       };
       if (typeof syncHud === 'function') syncHud();
     }

@@ -50,10 +50,7 @@ export function solveRoom(logic, idx) {
   if (g.screen !== 1) throw new Error(`${lv.id}: expected auto-advance to screen 1 after opening all 6 hotspots`);
   for (let rIdx = 0; rIdx < lv.rounds.length; rIdx++) {
     const r = lv.rounds[rIdx];
-    if (!g.tapStone(r.onset)) throw new Error(`${lv.id} round ${rIdx}: failed onset ${r.onset}`);
-    if (lv.mode === 'blend') {
-      if (!g.tapStone(r.rime)) throw new Error(`${lv.id} round ${rIdx}: failed rime ${r.rime}`);
-    }
+    if (!g.tapStone(r.word)) throw new Error(`${lv.id} round ${rIdx}: failed letter ${r.word}`);
     for (let k = 0; k < 10; k++) g.step(DT);
   }
   if (g.state !== expectedFinal) throw new Error(`${lv.id}: ended in ${g.state}, expected ${expectedFinal}`);

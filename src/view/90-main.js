@@ -98,6 +98,13 @@
     talkOnEvents(evs, game);
   }
 
+  function onWorkshopPromptReplay() {
+    if (!canPlay() || game.screen !== 1) return;
+    unlockAudio();
+    const r = game.currentRound();
+    if (r) TK.say('quiz_' + r.word, { interrupt: true, tag: 'prompt', maxWait: 4000 });
+  }
+
   let lastHoverStone = { chunk: '', t: 0 };
   function onStoneHover(chunk) {
     if (!canPlay() || game.screen !== 1) return;
@@ -121,8 +128,11 @@
     }
     const blended = evs.find(e => e.type === 'word_blended');
     if (blended) {
-      const wsAn = $('wsAnimal');
-      if (wsAn) { wsAn.classList.add('ux-anim-pulse'); uxConfetti($('fx'), 480, 202, 26); }
+      if (typeof revealWorkshopMascot === 'function') revealWorkshopMascot(blended.word);
+      uxConfetti($('fx'), 480, 212, 38);
+      setTimeout(() => {
+        if ($('fx')) { uxConfetti($('fx'), 370, 165, 18); uxConfetti($('fx'), 590, 165, 18); }
+      }, 220);
     }
     if (game.state === 'clear' || game.state === 'win') {
       const lvIdx = game.index;
@@ -130,7 +140,12 @@
       return;
     }
     if (blended) {
-      setTimeout(() => { if (game.state === 'play') renderStage(game, false); }, 1350);
+      setTimeout(() => {
+        if (game.state !== 'play') return;
+        renderStage(game, false);
+        const nr = game.currentRound();
+        if (nr) TK.say('quiz_' + nr.word, { tag: 'prompt', maxWait: 4500 });
+      }, 1600);
     } else {
       renderStage(game, false);
     }

@@ -40,7 +40,7 @@ export function checkContentKeys(logic = loadLogic()) {
     fs.readdirSync(path.join(ROOT, dir)).filter(f => f.endsWith('.js')).sort().map(f => read(`${dir}/${f}`))
   ).join('\n');
 
-  const need = ['p1', 'p2', 'p3', 'win', 'end', 'me_labrador', 'me_skye', 'screen2_onset', 'screen2_blend',
+  const need = ['p1', 'p2', 'p3', 'win', 'end', 'me_labrador', 'me_skye', 'screen2_letter',
     'stone_assist', 'tutor_tap', 'tutor_phonics', 'tutor_fullscreen',
     'ui_play', 'ui_continue', 'ui_next', 'ui_replay', 'ui_back', 'ui_words', 'ui_stickers', 'ui_wardrobe',
     'ui_settings', 'ui_hint', 'ui_fullscreen', 'ui_sound', 'ui_quiz_skip', 'ui_meet', 'ui_rooms',
@@ -55,8 +55,7 @@ export function checkContentKeys(logic = loadLogic()) {
       if (i < logic.levels.length - 1) need.push(`recall_${w}`);
     }
     for (const r of lv.rounds) {
-      for (const o of r.onsets) need.push(`ph_${o}`);
-      for (const ri of r.rimes) need.push(`ph_${ri}`);
+      for (const c of r.choices || []) need.push(`ph_${c}`);
     }
   });
 
