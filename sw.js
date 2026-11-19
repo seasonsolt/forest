@@ -1,7 +1,7 @@
 /* The offline worker for 天天和警长的森林探案. TEMPLATE stamped by art/build_page.py into sw.js. */
 /* global self, caches, fetch, URL, Request, Response */
 const ASSET_VERSION = "b6d3e7aede95";
-const PAGE_HASH = "5df10e7bed86";
+const PAGE_HASH = "f289a1ddc1ea";
 const PRECACHE = [
   "forest.html",
   "manifest.webmanifest",

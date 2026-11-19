@@ -41,17 +41,18 @@
   .ux-btn .btn-vis { transition: transform .16s ease, filter .16s ease; }
   .ux-btn:hover .btn-vis, .ux-btn:focus-visible .btn-vis { transform: scale(1.06); filter: drop-shadow(0 0 12px rgba(255, 224, 150, .85)); }
   .ux-btn:active .btn-vis { transform: scale(.94); }
-  .ux-btn:focus-visible { outline: none; }
+  .ux-btn:focus, .ux-btn:focus-visible { outline: none; }
   .ux-btn.is-hold .btn-vis { filter: drop-shadow(0 0 14px rgba(154, 240, 178, .9)); }
   .ux-btn[data-state="lock"] { cursor: default; }
   .ux-btn[data-state="lock"]:hover .btn-vis { transform: none; filter: none; }
 
   .hotspot { cursor: pointer; transition: transform .18s ease; }
   .hotspot:hover { filter: drop-shadow(0 0 10px rgba(255, 236, 155, .9)); }
+  .hotspot:focus, .hotspot:focus-visible { outline: none; }
   .stone-btn { cursor: pointer; }
   .stone-btn:hover .stone-vis, .stone-btn:focus-visible .stone-vis { transform: scale(1.07); filter: drop-shadow(0 0 14px rgba(255, 218, 122, .95)); }
   .stone-btn:active .stone-vis { transform: scale(.93); }
-  .stone-btn:focus-visible { outline: none; }
+  .stone-btn:focus, .stone-btn:focus-visible { outline: none; }
 
   @keyframes uxShake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-7px); } 75% { transform: translateX(7px); } }
   .ux-shake { animation: uxShake .32s ease-out; }

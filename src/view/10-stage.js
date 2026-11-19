@@ -228,8 +228,8 @@
       box.querySelectorAll('[data-act="ws-trace"], [data-act="ws-next"]').forEach(n => n.remove());
       if (o.onTrace || o.onNext) {
         let html = '';
-        if (o.onTrace) html += uxButton({ act: 'ws-trace', ui: 'trace', icon: 'trace', x: 716, y: 212, r: 36, cls: 'ux-pop on' });
-        if (o.onNext) html += uxButton({ act: 'ws-next', ui: 'next', icon: 'next', x: 836, y: 212, r: 34, plate: 'gold', cls: 'ux-pop on' });
+        if (o.onTrace) html += uxButton({ act: 'ws-trace', ui: 'trace', icon: 'trace', x: 716, y: 212, r: 36, cls: 'ux-pulse' });
+        if (o.onNext) html += uxButton({ act: 'ws-next', ui: 'next', icon: 'next', x: 836, y: 212, r: 34, plate: 'gold' });
         box.insertAdjacentHTML('beforeend', html);
         const trBtn = box.querySelector('[data-act="ws-trace"]');
         if (trBtn && o.onTrace) {
